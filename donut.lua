@@ -34,15 +34,15 @@ function addon.donut:New(direction, radius, thickness, color, bgColor, frame)
 	function donut:SetThickness(thickness)
 		self.thickness = thickness
 		for _,v in ipairs(self.background) do
-			v:SetTexture("Interface\\Addons\\GCD\\Textures\\segment_" .. thickness)
+			v:SetTexture("Interface\\Addons\\GCDReborn\\Textures\\segment_" .. thickness)
 		end
 
-		self.segment1:SetTexture("Interface\\Addons\\GCD\\Textures\\segment_" .. thickness)
-		self.segment2:SetTexture("Interface\\Addons\\GCD\\Textures\\segment_" .. thickness)
-		self.segment3:SetTexture("Interface\\Addons\\GCD\\Textures\\segment_" .. thickness)
+		self.segment1:SetTexture("Interface\\Addons\\GCDReborn\\Textures\\segment_" .. thickness)
+		self.segment2:SetTexture("Interface\\Addons\\GCDReborn\\Textures\\segment_" .. thickness)
+		self.segment3:SetTexture("Interface\\Addons\\GCDReborn\\Textures\\segment_" .. thickness)
 			
-		self.red:SetTexture("Interface\\Addons\\GCD\\Textures\\segment_" .. thickness)
-		self.blue:SetTexture("Interface\\Addons\\GCD\\Textures\\segment_" .. thickness)
+		self.red:SetTexture("Interface\\Addons\\GCDReborn\\Textures\\segment_" .. thickness)
+		self.blue:SetTexture("Interface\\Addons\\GCDReborn\\Textures\\segment_" .. thickness)
 	end
 	
 	function donut:SetDirection(direction)
@@ -334,7 +334,7 @@ function addon.donut:New(direction, radius, thickness, color, bgColor, frame)
 	----------------------------------------------Parts------------------------------------------------------
 	-- slice
 	texture = donutFrame:CreateTexture(nil, 'ARTWORK')
-	texture:SetTexture("Interface\\Addons\\GCD\\Textures\\slice")
+	texture:SetTexture("Interface\\Addons\\GCDReborn\\Textures\\slice")
 	donut.slice = texture
 	-- Red part
 	donut.red = donutFrame:CreateTexture(nil, 'ARTWORK')
