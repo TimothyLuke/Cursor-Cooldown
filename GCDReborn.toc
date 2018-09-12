@@ -1,0 +1,29 @@
+﻿## Interface: 80000
+## Title: GCDReborn
+## Notes: Display the global cooldown around your cursor. (+ other stuff)
+## Author: @project-author@
+## Version: @project-version@
+## OptionalDeps: Ace3, LibStub, LibSharedMedia-3.0
+## X-Embeds: Ace3, LibStub, LibSharedMedia-3.0
+## X-Category: Interface Enhancement
+## X-License: GPL v3
+## X-Credits: Nymbia, Nevcairiel (copied parts of Quartz)
+## SavedVariables: GCDDB
+
+#@no-lib-strip@
+embeds.xml
+#@end-no-lib-strip@
+
+Localization\enUS.lua
+Localization\deDE.lua
+Localization\esES.lua
+Localization\esMX.lua
+Localization\frFR.lua
+Localization\koKR.lua
+Localization\ruRU.lua
+Localization\zhCN.lua
+Localization\zhTW.lua
+
+GCD.lua
+donut.lua
+modules.xml
