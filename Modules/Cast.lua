@@ -251,9 +251,9 @@ function module:Show()
 	else
 		castFrame.spellText:Hide()
 	end
-	
+
 	castFrame:Show()
-	
+
 	local angle = castLatency * 360
 	if not module.db.profile.sparkOnly then
 		castFrame.latencyDonut:SetAngle(angle)
@@ -262,7 +262,7 @@ end
 
 function module:Hide()
 	castFrame:Hide()
-	
+
 	if ringMod and ringMod:IsEnabled() then ringMod:Hide("cast") end
 	addon:Hide("cast")
 end
@@ -275,14 +275,14 @@ local function OnUpdate(self, elapsed)
 			castFrame.donut:SetAngle(angle)
 		end
 		angle = 360 -(-90 + angle)
-		
+
 		local x = cos(angle) * module.db.profile.radius * 0.95
 		local y = sin(angle) * module.db.profile.radius * 0.95
 		local spark = castFrame.sparkTexture
 		spark:SetRotation(rad(angle+90))
 		spark:ClearAllPoints()
 		spark:SetPoint("CENTER", castFrame, "CENTER", x, y)
-		
+
 		if module.db.profile.sparkOnly and castPerc > 1-castLatency then
 			spark:SetVertexColor(module.db.profile.latencyColor.r, module.db.profile.latencyColor.g, module.db.profile.latencyColor.b, module.db.profile.latencyColor.a)
 		else
@@ -298,10 +298,11 @@ function module:UNIT_SPELLCAST_SENT(_, unit)
 	castSent = GetTime() * 1000
 end
 
-function module:UNIT_SPELLCAST_START(_, unit, spell)
+function module:UNIT_SPELLCAST_START(_, unit, action)
 	if unit ~= 'player' then return end
-	_, _, _, icon, castStartTime, castEndTime = UnitCastingInfo(unit)
-	local sendLag = (castSent and castSent > 0) and GetTime() * 1000 - castSent or 0
+	_, _, _, castStartTime, castEndTime, _, _, _, spellid = UnitCastingInfo(unit)
+	spell,_,_,_,_,_=GetSpellInfo(spellid)
+	sendLag = (castSent and castSent > 0) and GetTime() * 1000 - castSent or 0
 	castDuration = castEndTime and castEndTime - castStartTime or 0
 	sendLag = sendLag > castDuration and castDuration or sendLag
 	castLatency = sendLag / castDuration
@@ -334,8 +335,9 @@ end
 
 function module:UNIT_SPELLCAST_CHANNEL_START(event,unit)
 	if unit ~= 'player' then return end
-	_, _, _, _, castStartTime, castEndTime = UnitChannelInfo(unit)
-	local sendLag = (castSent and castSent > 0) and GetTime() * 1000 - castSent or 0
+
+	spell, _, _, castStartTime, castEndTime = UnitChannelInfo(unit)
+	sendLag = (castSent and castSent > 0) and GetTime() * 1000 - castSent or 0
 	castDuration = castEndTime and castEndTime - castStartTime or 0
 	sendLag = sendLag > castDuration and castDuration or sendLag
 	castLatency = sendLag / castDuration
@@ -361,19 +363,19 @@ function module:ApplyOptions()
 			castFrame = CreateFrame("Frame")
 			castFrame:SetParent(anchor)
 			castFrame:SetAllPoints()
-			
+
 			castFrame.sparkTexture = castFrame:CreateTexture(nil, 'OVERLAY')
 			castFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
 			castFrame.sparkTexture:SetBlendMode("ADD")
 		end
 		self:Hide()
-		
+
 		if not self.db.profile.sparkOnly then
 			if not castFrame.donut then
 				local donut = addon.donut:New(false, self.db.profile.radius, self.db.profile.thickness, self.db.profile.latencyColor, self.db.profile.backgroundColor)
 				donut:AttachTo(castFrame)
 				castFrame.latencyDonut = donut
-				
+
 				local bgcm = {}
 				bgcm.r = 0
 				bgcm.g = 0
@@ -388,14 +390,14 @@ function module:ApplyOptions()
 				donut:SetThickness(self.db.profile.thickness)
 				donut:SetBarColor(self.db.profile.barColor)
 				donut:SetBackgroundColor(self.db.profile.backgroundColor)
-				
+
 				donut = castFrame.latencyDonut
 				donut:SetRadius(self.db.profile.radius)
 				donut:SetThickness(self.db.profile.thickness)
 				donut:SetBarColor(self.db.profile.latencyColor)
 				donut:SetBackgroundColor(self.db.profile.backgroundColor)
 			end
-			
+
 			castFrame:SetScript("OnShow", function(self) self.donut:Show() self.latencyDonut:Show() end)
 			castFrame:SetScript("OnHide", function(self) self.donut:Hide() self.latencyDonut:Hide() end)
 		elseif castFrame.donut then
@@ -404,12 +406,12 @@ function module:ApplyOptions()
 			castFrame:SetScript("OnShow", nil)
 			castFrame:SetScript("OnHide", nil)
 		end
-		
+
 		castFrame.sparkTexture:SetVertexColor(self.db.profile.sparkColor.r, self.db.profile.sparkColor.g, self.db.profile.sparkColor.b, self.db.profile.sparkColor.a)
 		castFrame.sparkTexture:SetWidth(self.db.profile.radius)
 		castFrame.sparkTexture:SetHeight(self.db.profile.radius)
 		castFrame.sparkTexture:Show()
-		
+
 		if self.db.profile.spellText then
 			local spellText = castFrame.spellText or castFrame:CreateFontString(nil, "OVERLAY")
 			spellText:ClearAllPoints()
@@ -421,7 +423,7 @@ function module:ApplyOptions()
 			castFrame.spellText:ClearAllPoints()
 			castFrame.spellText:Hide()
 		end
-		
+
 		if self.db.profile.hideCastBar then
 			CastingBarFrame:UnregisterAllEvents()
 			CastingBarFrame:Hide()
@@ -436,7 +438,7 @@ function module:ApplyOptions()
 			CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
 			CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
 		end
-		
+
 		castFrame:SetScript('OnUpdate', OnUpdate)
 	end
 end
