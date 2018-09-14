@@ -233,6 +233,7 @@ function addon:OnInitialize()
 	self:InitializeOptions()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("CC", options)
 	ACD:SetDefaultSize("CC", 640, 480)
+	ACD:AddToBlizOptions("CC", "Cursor Cooldown")
 	self:RegisterChatCommand("gcd", self.OpenConfig)
 	self:RegisterChatCommand("cc", self.OpenConfig)
 end
