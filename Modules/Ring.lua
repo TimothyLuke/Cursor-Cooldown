@@ -1,6 +1,6 @@
-local addon = LibStub("AceAddon-3.0"):GetAddon("GCD")
+local addon = LibStub("AceAddon-3.0"):GetAddon("CC")
 local module = addon:NewModule("ring")
-local L = LibStub("AceLocale-3.0"):GetLocale("GCD")
+local L = LibStub("AceLocale-3.0"):GetLocale("CC")
 local dbVersion = 1
 
 local GetTime = GetTime
@@ -16,6 +16,31 @@ local defaults = {
 		rotate = false
 	}
 }
+
+function module:ApplyOptions()
+	local anchor = addon.anchor
+	if self:IsEnabled() then
+		if not ringFrame then
+			ringFrame = CreateFrame("Frame")
+			ringFrame:SetParent(anchor)
+			ringFrame:SetAllPoints()
+			ringFrame:SetScript('OnShow', OnShow)
+			ringFrame.texture = ringFrame:CreateTexture(nil, 'ARTWORK')
+			ringFrame.texture.timer = 0;
+			ringFrame.texture.hAngle = 0;
+		end
+		local texture = ringFrame.texture
+		texture:SetTexture(self.db.profile.texture) -- Spells\\AURARUNE8
+		texture:SetVertexColor(self.db.profile.color.r,self.db.profile.color.g,self.db.profile.color.b,self.db.profile.color.a) -- 0,1,0,0.5
+		texture:SetBlendMode('ADD')
+		texture:SetWidth(80)
+		texture:SetHeight(80)
+		texture:SetPoint('CENTER', ringFrame, 'CENTER')
+		texture:SetRotation(rad(texture.hAngle))
+		texture:Show()
+		ringFrame:Hide()
+	end
+end
 
 function module:OnEnable()
 	self:ApplyOptions()
@@ -55,7 +80,7 @@ function module:GetOptions()
 				get = function(info) return self.db.profile.texture end,
 				set = function(info, val)
 							self.db.profile.texture = val
-							self:ApplySettings()
+							self:ApplyOptions()
 						end,
 				order = 11
 			},
@@ -66,7 +91,7 @@ function module:GetOptions()
 				get = function(info) return self.db.profile.color.r, self.db.profile.color.g, self.db.profile.color.b, self.db.profile.color.a end,
 				set = function(info, r, g, b, a)
 							self.db.profile.color = {r=r, g=g, b=b, a=a}
-							self:ApplySettings()
+							self:ApplyOptions()
 						end,
 				hasAlpha = true,
 				order = 12
@@ -90,13 +115,13 @@ function module:GetOptions()
 				disabled = function() return not addon.db.profile.modules.ring end,
 				func = function()
 							self.db:ResetProfile()
-							self:ApplySettings()
+							self:ApplyOptions()
 						end,
 				order = 21
 			}
 		}
 	}
-	
+
 	return options
 end
 
@@ -124,7 +149,7 @@ end
 
 function module:Hide(module)
 	showRequests[module] = false;
-	
+
 	local hide = true;
 	for _,v in pairs(showRequests) do
 		if v then
@@ -133,31 +158,6 @@ function module:Hide(module)
 		end
 	end
 	if hide then
-		ringFrame:Hide()
-	end
-end
-
-function module:ApplyOptions()
-	local anchor = addon.anchor
-	if self:IsEnabled() then
-		if not ringFrame then
-			ringFrame = CreateFrame("Frame")
-			ringFrame:SetParent(anchor)
-			ringFrame:SetAllPoints()
-			ringFrame:SetScript('OnShow', OnShow)
-			ringFrame.texture = ringFrame:CreateTexture(nil, 'ARTWORK')
-			ringFrame.texture.timer = 0;
-			ringFrame.texture.hAngle = 0;
-		end
-		local texture = ringFrame.texture
-		texture:SetTexture(self.db.profile.texture) -- Spells\\AURARUNE8
-		texture:SetVertexColor(self.db.profile.color.r,self.db.profile.color.g,self.db.profile.color.b,self.db.profile.color.a) -- 0,1,0,0.5
-		texture:SetBlendMode('ADD')
-		texture:SetWidth(80)
-		texture:SetHeight(80)
-		texture:SetPoint('CENTER', ringFrame, 'CENTER')
-		texture:SetRotation(rad(texture.hAngle))
-		texture:Show()
 		ringFrame:Hide()
 	end
 end

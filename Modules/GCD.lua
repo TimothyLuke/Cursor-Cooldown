@@ -1,6 +1,6 @@
-local addon = LibStub("AceAddon-3.0"):GetAddon("GCD")
+local addon = LibStub("AceAddon-3.0"):GetAddon("CC")
 local module = addon:NewModule("gcd")
-local L = LibStub("AceLocale-3.0"):GetLocale("GCD")
+local L = LibStub("AceLocale-3.0"):GetLocale("CC")
 local dbVersion = 1
 
 local GetTime = GetTime
@@ -9,26 +9,12 @@ local spellName
 local gcdFrame
 local options
 local ringMod
---
--- local spells = {
---   ["DRUID"] = 5176,
---   ["PALADIN"] = 20154,
---   ["PRIEST"] = 585,
---   ["SHAMAN"] = 403,
---   ["WARRIOR"] = 34428,
---   ["DEATHKNIGHT"] = 47541,
---   ["HUNTER"] = 56641,
---   ["MAGE"] = 133,
---   ["WARLOCK"] = 686,
---   ["ROGUE"] = 1752,
---   ["MONK"] = 100780
--- }
 
 local defaults = {
   profile = {
     barColor = {r = 1, g = 1, b = 1, a = 0.8},
     backgroundColor = {r = 0.4, g = 0.4, b = 0.4, a = 0.8},
-    sparkColor = {r = 1, g = 1, b = 1, a = 1},
+    sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
     radius = 23,
     thickness = 25,
     sparkOnly = false
@@ -55,14 +41,14 @@ function module:FixDatabase()
 end
 
 function module:OnInitialize()
-  self.db = addon.db:RegisterNamespace("GCD", defaults)
+  self.db = addon.db:RegisterNamespace("CC", defaults)
   self:FixDatabase()
   ringMod = addon:GetModule("ring", true)
 end
 
 function module:GetOptions()
   options = {
-    name = "GCD",
+    name = "CC",
     type = "group",
     args = {
       sparkOnly = {

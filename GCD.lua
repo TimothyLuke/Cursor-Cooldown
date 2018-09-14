@@ -1,5 +1,5 @@
-﻿local addon = LibStub("AceAddon-3.0"):NewAddon("GCD", "AceConsole-3.0", "AceEvent-3.0")
-local L = LibStub("AceLocale-3.0"):GetLocale("GCD")
+﻿local addon = LibStub("AceAddon-3.0"):NewAddon("CC", "AceConsole-3.0", "AceEvent-3.0")
+local L = LibStub("AceLocale-3.0"):GetLocale("CC")
 local ACD = LibStub("AceConfigDialog-3.0")
 local dbVersion = 1
 
@@ -56,10 +56,6 @@ function addon:InitializeDefaults()
 				y = 400
 			},
 			attachToMouse = true,
-			talentSpecs = {
-				primary = true,
-				secondary = true
-			},
 			modules = {}
 		}
 	}
@@ -71,7 +67,7 @@ end
 
 function addon:InitializeOptions()
 	options = {
-		name = "GCD",
+		name = "Cursor Cooldown",
 		type = "group",
 		args = {
 			unlock = {
@@ -165,31 +161,7 @@ function addon:InitializeOptions()
 										end,
 						order = 5
 					},
-					specs = {
-						name = L["Talent Specs"],
-						type = "header",
-						order = 10
-					},
-					primary = {
-						name = L["Primary"],
-						type = "toggle",
-						get = function(info) return self.db.profile.talentSpecs.primary end,
-						set = function(info,val)
-								self.db.profile.talentSpecs.primary = val
-								self:ACTIVE_TALENT_GROUP_CHANGED()
-							end,
-						order = 11
-					},
-					secondary = {
-						name = L["Secondary"],
-						type = "toggle",
-						get = function(info) return self.db.profile.talentSpecs.secondary end,
-						set = function(info,val)
-								self.db.profile.talentSpecs.secondary = val
-								self:ACTIVE_TALENT_GROUP_CHANGED()
-							end,
-						order = 12
-					},
+
 				},
 				order = 10
 			}
@@ -238,14 +210,6 @@ function addon:FixDatabase()
 			if self.db.char.attachToMouse ~= nil then
 				self.db.profile.attachToMouse = self.db.char.attachToMouse
 			end
-			if self.db.char.talentSpecs then
-				if self.db.char.talentSpecs.primary ~= nil then
-					self.db.profile.talentSpecs.primary = self.db.char.talentSpecs.primary
-				end
-				if self.db.char.talentSpecs.secondary ~= nil then
-					self.db.profile.talentSpecs.secondary = self.db.char.talentSpecs.secondary
-				end
-			end
 			for i,v in pairs(self.db.profile.modules) do
 				if self.db.char.modules and self.db.char.modules[i] ~= nil then
 					self.db.profile.modules[i] = self.db.char.modules[i]
@@ -263,27 +227,23 @@ end
 
 function addon:OnInitialize()
 	self:InitializeDefaults()
-	self.db = LibStub("AceDB-3.0"):New("GCDDB", defaults)
+	self.db = LibStub("AceDB-3.0"):New("CursorCooldownDB", defaults)
 	self:FixDatabase()
 
 	self:InitializeOptions()
-	LibStub("AceConfig-3.0"):RegisterOptionsTable("GCD", options)
-	ACD:SetDefaultSize("GCD", 640, 480)
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("CC", options)
+	ACD:SetDefaultSize("CC", 640, 480)
 	self:RegisterChatCommand("gcd", self.OpenConfig)
+	self:RegisterChatCommand("cc", self.OpenConfig)
 end
 
 function addon:OnEnable()
 	self:ApplyOptions()
-	-- local activeSpec = GetActiveSpecGroup(false, false)
-	local activeSpec = 1
-	if (activeSpec == 1 and self.db.profile.talentSpecs.primary) or (activeSpec == 2 and self.db.profile.talentSpecs.secondary) then
-		for name, _ in self:IterateModules() do
+	for name, _ in self:IterateModules() do
 			if self.db.profile.modules[name] then
 				self:EnableModule(name)
 			end
-		end
 	end
-	self:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 	return true
 end
 
@@ -298,17 +258,6 @@ function addon:OnDisable()
 	return true
 end
 
-function addon:ACTIVE_TALENT_GROUP_CHANGED()
-	-- local activeSpec = GetActiveSpecGroup(false, false)
-	local activeSpec = 1
-	if (activeSpec == 1 and self.db.profile.talentSpecs.primary) or (activeSpec == 2 and self.db.profile.talentSpecs.secondary) then
-		self:OnEnable()
-	else
-		self:OnDisable()
-		self:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
-	end
-end
-
 function addon:ApplyOptions()
 	local anchor = self.anchor or CreateFrame("Frame")
 	anchor:Hide()
@@ -320,21 +269,11 @@ function addon:ApplyOptions()
 
 	self.anchor = anchor
 
-	-- local activeSpec = GetActiveSpecGroup(false, false)
-	local activeSpec = 1
-	if (activeSpec == 1 and self.db.profile.talentSpecs.primary) or (activeSpec == 2 and self.db.profile.talentSpecs.secondary) then
-		for name, _ in self:IterateModules() do
-			if self.db.profile.modules[name] then
-				self:EnableModule(name)
-			else
-				self:DisableModule(name)
-			end
-		end
-	end
+
 end
 
 function addon:OpenConfig()
-	ACD:Open("GCD")
+	ACD:Open("CC")
 end
 
 --[[
@@ -395,7 +334,7 @@ function addon:Unlock()
 			end
 		end
 
-		ACD:Close("GCD")
+		ACD:Close("CC")
 		return true
 	else
 		return L["All unlockable modules are disabled!"]

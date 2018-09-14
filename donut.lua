@@ -2,7 +2,7 @@
 	Most of the functionality was taken from Circle Cast 2. Credits go to Greg Flynn (Nuckin)
 ]]
 
-local addon = LibStub("AceAddon-3.0"):GetAddon("GCD")
+local addon = LibStub("AceAddon-3.0"):GetAddon("CC")
 addon.donut = {}
 
 local rad, sin, cos = math.rad, math.sin, math.cos

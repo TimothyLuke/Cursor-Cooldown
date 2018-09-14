@@ -1,7 +1,7 @@
-local addon = LibStub("AceAddon-3.0"):GetAddon("GCD")
+local addon = LibStub("AceAddon-3.0"):GetAddon("CC")
 local module = addon:NewModule("cast")
 local media = LibStub("LibSharedMedia-3.0")
-local L = LibStub("AceLocale-3.0"):GetLocale("GCD")
+local L = LibStub("AceLocale-3.0"):GetLocale("CC")
 local dbVersion = 1
 
 local GetTime = GetTime
@@ -14,7 +14,7 @@ local defaults = {
 	profile = {
 		barColor = {r=1, g=1, b=1, a=0.8},
 		backgroundColor = {r=0.4, g=0.4, b=0.4, a=0.8},
-		sparkColor = {r=1, g=1, b=1, a=1},
+		sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
 		latencyColor = {r=1, g=0, b=0, a=1},
 		radius = 22,
 		thickness = 25,

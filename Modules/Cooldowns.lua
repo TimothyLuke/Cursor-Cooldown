@@ -1,7 +1,7 @@
-local addon = LibStub("AceAddon-3.0"):GetAddon("GCD")
+local addon = LibStub("AceAddon-3.0"):GetAddon("CC")
 local module = addon:NewModule("cooldowns")
 local media = LibStub("LibSharedMedia-3.0")
-local L = LibStub("AceLocale-3.0"):GetLocale("GCD")
+local L = LibStub("AceLocale-3.0"):GetLocale("CC")
 local dbVersion = 1
 
 local GetTime = GetTime

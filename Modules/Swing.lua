@@ -2,9 +2,9 @@
 	Most of the functionality was taken from the Quartz - Swing Module. Credits go to Nymbia and Nevcairiel
 ]]
 
-local addon = LibStub("AceAddon-3.0"):GetAddon("GCD")
+local addon = LibStub("AceAddon-3.0"):GetAddon("CC")
 local module = addon:NewModule("swing")
-local L = LibStub("AceLocale-3.0"):GetLocale("GCD")
+local L = LibStub("AceLocale-3.0"):GetLocale("CC")
 local dbVersion = 1
 
 local GetTime = GetTime
@@ -25,7 +25,7 @@ local defaults = {
 	profile = {
 		barColor = {r=1, g=1, b=1, a=0.8},
 		backgroundColor = {r=0.4, g=0.4, b=0.4, a=0.8},
-		sparkColor = {r=1, g=1, b=1, a=1},
+		sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
 		radius = 18,
 		thickness = 25,
 		sparkOnly = false
@@ -36,17 +36,17 @@ function module:OnEnable()
 	self:ApplyOptions()
 	self:RegisterEvent("PLAYER_ENTER_COMBAT")
 	self:RegisterEvent("PLAYER_LEAVE_COMBAT")
-	
+
 	self:RegisterEvent("START_AUTOREPEAT_SPELL")
 	self:RegisterEvent("STOP_AUTOREPEAT_SPELL")
-	
+
 	self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-	
+
 	if playerClass == "WARRIOR" then
 		self:RegisterEvent("UNIT_SPELLCAST_START")
 		self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
 	end
-	
+
 	self:RegisterEvent("UNIT_ATTACK")
 end
 
@@ -188,7 +188,7 @@ end
 
 function module:Hide()
 	swingFrame:Hide()
-	
+
 	if ringMod and ringMod:IsEnabled() then ringMod:Hide("swing") end
 	startTime, duration = nil, nil
 	addon:Hide("swing")
@@ -256,9 +256,9 @@ function module:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell)
 end
 
 function module:UNIT_SPELLCAST_INTERRUPTED(event, unit, spell)
-	if unit == "player" and spell == slam and slamstart then 
+	if unit == "player" and spell == slam and slamstart then
 		slamstart = nil
-	end 
+	end
 end
 
 function module:UNIT_SPELLCAST_START(event, unit, spell)
@@ -294,7 +294,7 @@ function module:ApplyOptions()
 			swingFrame = CreateFrame("Frame")
 			swingFrame:SetParent(anchor)
 			swingFrame:SetAllPoints()
-			
+
 			swingFrame.sparkTexture = swingFrame:CreateTexture(nil, 'OVERLAY')
 			swingFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
 			swingFrame.sparkTexture:SetBlendMode("ADD")
@@ -313,7 +313,7 @@ function module:ApplyOptions()
 				donut:SetBarColor(self.db.profile.barColor)
 				donut:SetBackgroundColor(self.db.profile.backgroundColor)
 			end
-			
+
 			swingFrame:SetScript("OnShow", function(self) self.donut:Show() end)
 			swingFrame:SetScript("OnHide", function(self) self.donut:Hide() end)
 		elseif swingFrame.donut then
@@ -321,12 +321,12 @@ function module:ApplyOptions()
 			swingFrame:SetScript("OnShow", nil)
 			swingFrame:SetScript("OnHide", nil)
 		end
-		
+
 		swingFrame.sparkTexture:SetVertexColor(self.db.profile.sparkColor.r, self.db.profile.sparkColor.g, self.db.profile.sparkColor.b, self.db.profile.sparkColor.a)
 		swingFrame.sparkTexture:SetWidth(self.db.profile.radius)
 		swingFrame.sparkTexture:SetHeight(self.db.profile.radius)
 		swingFrame.sparkTexture:Show()
-		
+
 		swingFrame:SetScript('OnUpdate', OnUpdate)
 	end
 end

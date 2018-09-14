@@ -1,4 +1,4 @@
-local L = LibStub("AceLocale-3.0"):NewLocale("GCD", "deDE")
+local L = LibStub("AceLocale-3.0"):NewLocale("CC", "deDE")
 if not L then return end
 
 --@localization(locale="deDE", format="lua_additive_table", handle-unlocalized="english")@
