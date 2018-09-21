@@ -54,18 +54,25 @@ local cdSpells = {
   ["DRUID"] = {
     {['spellID'] = 48438, ['pos'] = {['x'] = 0, ['y'] = 0}},
     {['spellID'] = 18562, ['pos'] = {['x'] = 0, ['y'] = 0}},
-    {['spellID'] = 132158, ['pos'] = {['x'] = 0, ['y'] = 0}},
-  },
+    },
   ["PRIEST"] = {
     {['spellID'] = 47540, ['pos'] = {['x'] = 0, ['y'] = 0}},
     {['spellID'] = 586, ['pos'] = {['x'] = 0, ['y'] = 0}},
-    {['spellID'] = 6346, ['pos'] = {['x'] = 0, ['y'] = 0}},
     {['spellID'] = 34433, ['pos'] = {['x'] = 0, ['y'] = 0}},
   },
   ["SHAMAN"] = {
-    {['spellID'] = 16188, ['pos'] = {['x'] = 0, ['y'] = 0}},
+    {['spellID'] = 32182, ['pos'] = {['x'] = 0, ['y'] = 0}},
+  },
+  ["MAGE"] = {
+    {['spellID'] = 80353, ['pos'] = {['x'] = 0, ['y'] = 0}},
   }
 }
+
+local englishFaction, localizedFaction = UnitFactionGroup("player")
+
+if englishFaction == "Horde" then
+  cdSpells["SHAMAN"][1]['spellID'] = 2825
+end
 
 local defaults = {
   char = {
@@ -125,6 +132,7 @@ function module:PopulateCdSpellsOptions()
   end
   for i, v in ipairs(cdSpells) do
     if v.spellID ~= null then
+
       local arg = {
 
         name = tostring(GetSpellInfo(v.spellID)),
@@ -134,7 +142,9 @@ function module:PopulateCdSpellsOptions()
             name = L["x-Offset"],
             type = "input",
             get = function() return tostring(cdSpells[i].pos.x) end,
-            set = function(info, value) cdSpells[i].pos.x = tonumber(value) end,
+            set = function(info, value)
+              cdSpells[i].pos.x = tonumber(value)
+            end,
             validate = function(info, value) if tonumber(value) == nil then return "That's not a number!" end return true end,
             order = 1
           },
@@ -153,6 +163,7 @@ function module:PopulateCdSpellsOptions()
               tremove(cdSpells, i)
               options.args.spells.args[tostring(i)] = nil
               self:SPELLS_CHANGED()
+              self:PopulateCdSpellsOptions()
             end,
             order = 3
           }
@@ -294,9 +305,7 @@ function module:GetOptions()
 end
 
 function module:ACTIONBAR_UPDATE_COOLDOWN()
-  if spellNum then
     local _, gcdLeft
-
     gcdLeft = GetSpellCooldown(61304)
     for _, v in ipairs(cdFrames) do
       spell = GetSpellBookItemName(v.spell, BOOKTYPE_SPELL)
@@ -304,28 +313,25 @@ function module:ACTIONBAR_UPDATE_COOLDOWN()
       if dur > gcdLeft then
         v.frame.startTime = start
         v.frame.duration = dur
-        self:Show(v.frame)
+        self:Sh11ow(v.frame)
       end
     end
-  end
 end
 
 function module:SPELLS_CHANGED()
-  spellNum = addon:GetSpellPosInSpellbook(GetSpellInfo(61304))
-  if spellNum then
-    for _, v in ipairs(cdFrames) do
-      if v.frame then FrameHandler:DeleteFrame(v.frame) end
-    end
-    cdFrames = {}
-    for _, v in ipairs(self.db.char.cdSpells) do
-      local spell, _, icon = GetSpellInfo(v.spellID)
-      local spellPos = addon:GetSpellPosInSpellbook(spell)
-      if spellPos then
-        tinsert(cdFrames, {['spell'] = spellPos, ['icon'] = icon, ['pos'] = v.pos}) -- Links frame offset to database value
-      end
-    end
-    self:ApplyOptions()
+
+  for _, v in ipairs(cdFrames) do
+    if v.frame then FrameHandler:DeleteFrame(v.frame) end
   end
+  cdFrames = {}
+  for _, v in ipairs(self.db.char.cdSpells) do
+    local spell, _, icon = GetSpellInfo(v.spellID)
+    local spellPos = addon:GetSpellPosInSpellbook(spell)
+    if spellPos then
+      tinsert(cdFrames, {['spell'] = spellPos, ['icon'] = icon, ['pos'] = v.pos}) -- Links frame offset to database value
+    end
+  end
+  self:ApplyOptions()
 end
 
 local framesVisible = {}
@@ -351,7 +357,7 @@ function module:Hide(frame)
 end
 
 local function OnUpdate(self, elapsed)
-  if not self.startTime or not self.duration or self.duration <= 0 then return end
+  if not self.startTime or not self.duration or self.duration <= 0 then print("exit") return end
   local perc = (GetTime() - self.startTime) / self.duration
   self.texture:SetVertexColor(1.0, perc, perc)
   local dur = floor((self.duration - (GetTime() - self.startTime)) * 10) / 10
