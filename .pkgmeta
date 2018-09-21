@@ -1,4 +1,4 @@
-﻿package-as: GCDReborn
+﻿package-as: CursorCooldown
 
 externals:
    Libs/AceAddon-3.0:
