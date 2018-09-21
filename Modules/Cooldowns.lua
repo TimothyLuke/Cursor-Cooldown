@@ -313,7 +313,7 @@ function module:ACTIONBAR_UPDATE_COOLDOWN()
       if dur > gcdLeft then
         v.frame.startTime = start
         v.frame.duration = dur
-        self:Sh11ow(v.frame)
+        self:Show(v.frame)
       end
     end
 end
