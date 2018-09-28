@@ -310,10 +310,12 @@ function module:ACTIONBAR_UPDATE_COOLDOWN()
     for _, v in ipairs(cdFrames) do
       spell = GetSpellBookItemName(v.spell, BOOKTYPE_SPELL)
       local start, dur = GetSpellCooldown(spell)
-      if dur > gcdLeft then
-        v.frame.startTime = start
-        v.frame.duration = dur
-        self:Show(v.frame)
+      if type(dur) == "number" and type(gcdLeft) == "number" then
+        if dur > gcdLeft then
+          v.frame.startTime = start
+          v.frame.duration = dur
+          self:Show(v.frame)
+        end
       end
     end
 end
