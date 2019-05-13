@@ -141,7 +141,11 @@ function module:PopulateCdSpellsOptions()
           xPos = {
             name = L["x-Offset"],
             type = "input",
-            get = function() return tostring(cdSpells[i].pos.x) end,
+            get = function()
+              if cdSpells[i] then
+                return tostring(cdSpells[i].pos.x) 
+              end
+            end,
             set = function(info, value)
               cdSpells[i].pos.x = tonumber(value)
             end,
@@ -151,7 +155,11 @@ function module:PopulateCdSpellsOptions()
           yPos = {
             name = L["y-Offset"],
             type = "input",
-            get = function() return tostring(cdSpells[i].pos.y) end,
+            get = function() 
+              if cdSpells[i] then
+                return tostring(cdSpells[i].pos.y) 
+              end
+            end,
             set = function(info, value) cdSpells[i].pos.y = tonumber(value) end,
             validate = function(info, value) if tonumber(value) == nil then return "That's not a number!" end return true end,
             order = 2
