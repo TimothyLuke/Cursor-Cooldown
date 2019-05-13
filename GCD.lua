@@ -1,4 +1,4 @@
-﻿local addon = LibStub("AceAddon-3.0"):NewAddon("CC", "AceConsole-3.0", "AceEvent-3.0")
+local addon = LibStub("AceAddon-3.0"):NewAddon("CC", "AceConsole-3.0", "AceEvent-3.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("CC")
 local ACD = LibStub("AceConfigDialog-3.0")
 local dbVersion = 1
@@ -34,10 +34,11 @@ function addon:GetSpellPosInSpellbook(spellName)
 		local _, _, offset, numSpells = GetSpellTabInfo(tab)
 		for i = (1+offset), (offset+numSpells) do
 			local spell = GetSpellBookItemName(i, BOOKTYPE_SPELL)
-
-			if string.lower(spell) == string.lower(spellName) then
-				spellNum = i
-				break
+			if spell then
+				if string.lower(spell) == string.lower(spellName) then
+					spellNum = i
+					break
+				end
 			end
 		end
 	end
