@@ -352,7 +352,7 @@ end
 
 function module:UNIT_SPELLCAST_CHANNEL_UPDATE(event,unit)
 	if unit ~= 'player' then return end
-	_, _, _, _, castStartTime, castEndTime = UnitChannelInfo(unit)
+	_, _, _, castStartTime, castEndTime = UnitChannelInfo(unit)
 	castDuration = castEndTime - castStartTime
 end
 
