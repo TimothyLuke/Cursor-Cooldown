@@ -12,7 +12,7 @@ local showRequests
 local defaults = {
 	profile = {
 		color = {r=0, g=1, b=0, a=0.5},
-		texture = 165630 -- "Spells\\AURARUNE8",
+		texture = 165630, -- "Spells\\AURARUNE8",
 		rotate = false
 	}
 }
