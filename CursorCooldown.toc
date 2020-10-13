@@ -1,4 +1,4 @@
-﻿## Interface: 80200
+﻿## Interface: 90002
 ## Title: Cursor Cooldown
 ## Notes: Display the global cooldown around your cursor. (+ other stuff)
 ## Author: TimothyLuke
