@@ -204,18 +204,18 @@ function module:GetOptions()
 				set = function(info,val)
 						self.db.profile.hideCastBar = val
 						if val then
-							CastingBarFrame:UnregisterAllEvents()
-							CastingBarFrame:Hide()
+							PlayerCastingBarFrame:UnregisterAllEvents()
+							PlayerCastingBarFrame:Hide()
 						else
-							CastingBarFrame:UnregisterAllEvents()
-							CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_START")
-							CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
-							CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
-							CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-							CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
-							CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-							CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-							CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
+							PlayerCastingBarFrame:UnregisterAllEvents()
+							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_START")
+							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
+							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
+							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
+							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
+							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
 						end
 					end,
 				order = 42
@@ -425,18 +425,18 @@ function module:ApplyOptions()
 		end
 
 		if self.db.profile.hideCastBar then
-			CastingBarFrame:UnregisterAllEvents()
-			CastingBarFrame:Hide()
+			PlayerCastingBarFrame:UnregisterAllEvents()
+			PlayerCastingBarFrame:Hide()
 		else
-			CastingBarFrame:UnregisterAllEvents()
-			CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_START")
-			CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
-			CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
-			CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-			CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
-			CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-			CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-			CastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
+			PlayerCastingBarFrame:UnregisterAllEvents()
+			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_START")
+			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
+			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
+			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
+			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
+			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
 		end
 
 		castFrame:SetScript('OnUpdate', OnUpdate)
