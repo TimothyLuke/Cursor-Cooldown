@@ -269,7 +269,7 @@ end
 
 local function OnUpdate(self, elapsed)
 	local castPerc = (1000 * GetTime() - castStartTime) / castDuration
-	if castPerc < 1 then
+	if castDuration ~= 0 and castPerc < 1 then
 		local angle = castPerc * 360
 		if not module.db.profile.sparkOnly then
 			castFrame.donut:SetAngle(angle)
