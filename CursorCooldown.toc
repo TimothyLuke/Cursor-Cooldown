@@ -1,4 +1,4 @@
-﻿## Interface: 100002
+﻿## Interface: 100100
 ## Title: Cursor Cooldown
 ## Notes: Display the global cooldown around your cursor. (+ other stuff)
 ## Author: TimothyLuke
