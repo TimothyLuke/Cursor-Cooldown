@@ -1,7 +1,6 @@
 --[[
 	Most of the functionality was taken from the Quartz - Swing Module. Credits go to Nymbia and Nevcairiel
 ]]
-
 local addon = LibStub("AceAddon-3.0"):GetAddon("CC")
 local module = addon:NewModule("swing")
 local L = LibStub("AceLocale-3.0"):GetLocale("CC")
@@ -15,16 +14,16 @@ local ringMod
 local swingMode
 local playerClass
 
-local autoshot = GetSpellInfo(75)
-local shoot = GetSpellInfo(5019)
-local slam = GetSpellInfo(1464)
+local autoshot = C_Spell.GetSpellInfo(75).name
+local shoot = C_Spell.GetSpellInfo(5019).name
+local slam = C_Spell.GetSpellInfo(1464).name
 local slamStart
 local startTime, duration
 
 local defaults = {
 	profile = {
-		barColor = {r=1, g=1, b=1, a=0.8},
-		backgroundColor = {r=0.4, g=0.4, b=0.4, a=0.8},
+		barColor = {r = 1, g = 1, b = 1, a = 0.8},
+		backgroundColor = {r = 0.4, g = 0.4, b = 0.4, a = 0.8},
 		sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
 		radius = 18,
 		thickness = 25,
@@ -57,7 +56,7 @@ end
 
 function module:FixDatabase()
 	if self.db.profile.version then
-		-- nothing to do yet
+	-- nothing to do yet
 	end
 	self.db.profile.version = dbVersion
 end
@@ -77,12 +76,16 @@ function module:GetOptions()
 			sparkOnly = {
 				name = L["Show spark only"],
 				type = "toggle",
-				disabled = function() return not addon.db.profile.modules.swing end,
-				get = function(info) return self.db.profile.sparkOnly end,
+				disabled = function()
+					return not addon.db.profile.modules.swing
+				end,
+				get = function(info)
+					return self.db.profile.sparkOnly
+				end,
 				set = function(info, val)
-							self.db.profile.sparkOnly = val
-							self:ApplyOptions()
-						end,
+					self.db.profile.sparkOnly = val
+					self:ApplyOptions()
+				end,
 				order = 1
 			},
 			radius = {
@@ -91,12 +94,16 @@ function module:GetOptions()
 				min = 10,
 				max = 256,
 				step = 1,
-				disabled = function() return not addon.db.profile.modules.swing end,
-				get = function(info) return self.db.profile.radius end,
+				disabled = function()
+					return not addon.db.profile.modules.swing
+				end,
+				get = function(info)
+					return self.db.profile.radius
+				end,
 				set = function(info, val)
-							self.db.profile.radius = val
-							self:ApplyOptions()
-						end,
+					self.db.profile.radius = val
+					self:ApplyOptions()
+				end,
 				order = 2
 			},
 			thickness = {
@@ -105,12 +112,16 @@ function module:GetOptions()
 				min = 15,
 				max = 25,
 				step = 5,
-				disabled = function() return not addon.db.profile.modules.swing end,
-				get = function(info) return self.db.profile.thickness end,
+				disabled = function()
+					return not addon.db.profile.modules.swing
+				end,
+				get = function(info)
+					return self.db.profile.thickness
+				end,
 				set = function(info, val)
-							self.db.profile.thickness = val
-							self:ApplyOptions()
-						end,
+					self.db.profile.thickness = val
+					self:ApplyOptions()
+				end,
 				order = 3
 			},
 			colors = {
@@ -121,36 +132,48 @@ function module:GetOptions()
 			barColor = {
 				name = L["Bar"],
 				type = "color",
-				disabled = function() return not addon.db.profile.modules.swing end,
-				get = function(info) return self.db.profile.barColor.r, self.db.profile.barColor.g, self.db.profile.barColor.b, self.db.profile.barColor.a end,
+				disabled = function()
+					return not addon.db.profile.modules.swing
+				end,
+				get = function(info)
+					return self.db.profile.barColor.r, self.db.profile.barColor.g, self.db.profile.barColor.b, self.db.profile.barColor.a
+				end,
 				set = function(info, r, g, b, a)
-							self.db.profile.barColor = {r=r, g=g, b=b, a=a}
-							self:ApplyOptions()
-						end,
+					self.db.profile.barColor = {r = r, g = g, b = b, a = a}
+					self:ApplyOptions()
+				end,
 				hasAlpha = true,
 				order = 11
 			},
 			bgColor = {
 				name = L["Background"],
 				type = "color",
-				disabled = function() return not addon.db.profile.modules.swing end,
-				get = function(info) return self.db.profile.backgroundColor.r, self.db.profile.backgroundColor.g, self.db.profile.backgroundColor.b, self.db.profile.backgroundColor.a end,
+				disabled = function()
+					return not addon.db.profile.modules.swing
+				end,
+				get = function(info)
+					return self.db.profile.backgroundColor.r, self.db.profile.backgroundColor.g, self.db.profile.backgroundColor.b, self.db.profile.backgroundColor.a
+				end,
 				set = function(info, r, g, b, a)
-							self.db.profile.backgroundColor = {r=r, g=g, b=b, a=a}
-							self:ApplyOptions()
-						end,
+					self.db.profile.backgroundColor = {r = r, g = g, b = b, a = a}
+					self:ApplyOptions()
+				end,
 				hasAlpha = true,
 				order = 12
 			},
 			sparkColor = {
 				name = L["Spark"],
 				type = "color",
-				disabled = function() return not addon.db.profile.modules.swing end,
-				get = function(info) return self.db.profile.sparkColor.r, self.db.profile.sparkColor.g, self.db.profile.sparkColor.b, self.db.profile.sparkColor.a end,
+				disabled = function()
+					return not addon.db.profile.modules.swing
+				end,
+				get = function(info)
+					return self.db.profile.sparkColor.r, self.db.profile.sparkColor.g, self.db.profile.sparkColor.b, self.db.profile.sparkColor.a
+				end,
 				set = function(info, r, g, b, a)
-							self.db.profile.sparkColor = {r=r, g=g, b=b, a=a}
-							self:ApplyOptions()
-						end,
+					self.db.profile.sparkColor = {r = r, g = g, b = b, a = a}
+					self:ApplyOptions()
+				end,
 				hasAlpha = true,
 				order = 13
 			},
@@ -162,11 +185,13 @@ function module:GetOptions()
 			defaults = {
 				name = L["Restore defaults"],
 				type = "execute",
-				disabled = function() return not addon.db.profile.modules.swing end,
+				disabled = function()
+					return not addon.db.profile.modules.swing
+				end,
 				func = function()
-							self.db:ResetProfile()
-							self:ApplyOptions()
-						end,
+					self.db:ResetProfile()
+					self:ApplyOptions()
+				end,
 				order = 21
 			}
 		}
@@ -176,7 +201,9 @@ end
 
 function module:Show()
 	addon:Show("swing")
-	if ringMod and ringMod:IsEnabled() then ringMod:Show("swing") end
+	if ringMod and ringMod:IsEnabled() then
+		ringMod:Show("swing")
+	end
 	startTime = GetTime()
 	if swingMode == 1 then
 		duration = UnitAttackSpeed("player")
@@ -189,7 +216,9 @@ end
 function module:Hide()
 	swingFrame:Hide()
 
-	if ringMod and ringMod:IsEnabled() then ringMod:Hide("swing") end
+	if ringMod and ringMod:IsEnabled() then
+		ringMod:Hide("swing")
+	end
 	startTime, duration = nil, nil
 	addon:Hide("swing")
 end
@@ -201,7 +230,7 @@ local function OnUpdate(self, elapsed)
 		if not module.db.profile.sparkOnly then
 			swingFrame.donut:SetAngle(angle)
 		end
-		angle = 360 -(-90 + angle)
+		angle = 360 - (-90 + angle)
 
 		local x = cos(angle) * module.db.profile.radius * 0.95
 		local y = sin(angle) * module.db.profile.radius * 0.95
@@ -215,7 +244,7 @@ local function OnUpdate(self, elapsed)
 end
 
 function module:PLAYER_ENTER_COMBAT()
-	local _,_,offhandlow, offhandhigh = UnitDamage("player")
+	local _, _, offhandlow, offhandhigh = UnitDamage("player")
 	if (offhandhigh - offhandlow) <= 0.1 or playerClass == "DRUID" then
 		swingMode = 1
 		self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
@@ -242,7 +271,9 @@ function module:STOP_AUTOREPEAT_SPELL()
 end
 
 function module:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell)
-	if unit ~= "player" or not swingMode then return end
+	if unit ~= "player" or not swingMode then
+		return
+	end
 	if swingMode == 1 then
 		if spell == slam and slamstart then
 			startTime = startTime + GetTime() - slamStart
@@ -267,7 +298,18 @@ function module:UNIT_SPELLCAST_START(event, unit, spell)
 	end
 end
 
-function module:COMBAT_LOG_EVENT_UNFILTERED(event, timestamp, combatevent, srcGUID, srcName, srcFlags, dstName, dstGUID, dstFlags, spellID, spellName)
+function module:COMBAT_LOG_EVENT_UNFILTERED(
+	event,
+	timestamp,
+	combatevent,
+	srcGUID,
+	srcName,
+	srcFlags,
+	dstName,
+	dstGUID,
+	dstFlags,
+	spellID,
+	spellName)
 	if srcGUID == UnitGUID("player") then
 		if combatevent == "SWING_DAMAGE" or combatevent == "SWING_MISSED" then
 			self:Show()
@@ -295,7 +337,7 @@ function module:ApplyOptions()
 			swingFrame:SetParent(anchor)
 			swingFrame:SetAllPoints()
 
-			swingFrame.sparkTexture = swingFrame:CreateTexture(nil, 'OVERLAY')
+			swingFrame.sparkTexture = swingFrame:CreateTexture(nil, "OVERLAY")
 			swingFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
 			swingFrame.sparkTexture:SetBlendMode("ADD")
 		end
@@ -303,7 +345,14 @@ function module:ApplyOptions()
 
 		if not self.db.profile.sparkOnly then
 			if not swingFrame.donut then
-				local donut = addon.donut:New(true, self.db.profile.radius, self.db.profile.thickness, self.db.profile.barColor, self.db.profile.backgroundColor)
+				local donut =
+					addon.donut:New(
+					true,
+					self.db.profile.radius,
+					self.db.profile.thickness,
+					self.db.profile.barColor,
+					self.db.profile.backgroundColor
+				)
 				donut:AttachTo(swingFrame)
 				swingFrame.donut = donut
 			else
@@ -314,20 +363,35 @@ function module:ApplyOptions()
 				donut:SetBackgroundColor(self.db.profile.backgroundColor)
 			end
 
-			swingFrame:SetScript("OnShow", function(self) self.donut:Show() end)
-			swingFrame:SetScript("OnHide", function(self) self.donut:Hide() end)
+			swingFrame:SetScript(
+				"OnShow",
+				function(self)
+					self.donut:Show()
+				end
+			)
+			swingFrame:SetScript(
+				"OnHide",
+				function(self)
+					self.donut:Hide()
+				end
+			)
 		elseif swingFrame.donut then
 			swingFrame.donut:Hide()
 			swingFrame:SetScript("OnShow", nil)
 			swingFrame:SetScript("OnHide", nil)
 		end
 
-		swingFrame.sparkTexture:SetVertexColor(self.db.profile.sparkColor.r, self.db.profile.sparkColor.g, self.db.profile.sparkColor.b, self.db.profile.sparkColor.a)
+		swingFrame.sparkTexture:SetVertexColor(
+			self.db.profile.sparkColor.r,
+			self.db.profile.sparkColor.g,
+			self.db.profile.sparkColor.b,
+			self.db.profile.sparkColor.a
+		)
 		swingFrame.sparkTexture:SetWidth(self.db.profile.radius)
 		swingFrame.sparkTexture:SetHeight(self.db.profile.radius)
 		swingFrame.sparkTexture:Show()
 
-		swingFrame:SetScript('OnUpdate', OnUpdate)
+		swingFrame:SetScript("OnUpdate", OnUpdate)
 	end
 end
 

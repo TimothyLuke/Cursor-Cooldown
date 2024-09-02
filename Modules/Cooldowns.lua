@@ -15,7 +15,9 @@ local FrameHandler = {
 
 function FrameHandler:CreateFrame(frameType, frameName, frameParent)
   local pool = self.framePool
-  if not pool[frameType] then pool[frameType] = {} end
+  if not pool[frameType] then
+    pool[frameType] = {}
+  end
 
   local frame = tremove(pool[frameType]) or CreateFrame(frameType, frameName, frameParent)
   return frame
@@ -27,7 +29,9 @@ function FrameHandler:DeleteFrame(frame)
   local frameType = frame:GetObjectType()
 
   local pool = self.framePool
-  if not pool[frameType] then pool[frameType] = {} end
+  if not pool[frameType] then
+    pool[frameType] = {}
+  end
 
   tinsert(pool[frameType], frame)
 end
@@ -52,26 +56,26 @@ end
 
 local cdSpells = {
   ["DRUID"] = {
-    {['spellID'] = 48438, ['pos'] = {['x'] = 0, ['y'] = 0}},
-    {['spellID'] = 18562, ['pos'] = {['x'] = 0, ['y'] = 0}},
-    },
+    {["spellID"] = 48438, ["pos"] = {["x"] = 0, ["y"] = 0}},
+    {["spellID"] = 18562, ["pos"] = {["x"] = 0, ["y"] = 0}}
+  },
   ["PRIEST"] = {
-    {['spellID'] = 47540, ['pos'] = {['x'] = 0, ['y'] = 0}},
-    {['spellID'] = 586, ['pos'] = {['x'] = 0, ['y'] = 0}},
-    {['spellID'] = 34433, ['pos'] = {['x'] = 0, ['y'] = 0}},
+    {["spellID"] = 47540, ["pos"] = {["x"] = 0, ["y"] = 0}},
+    {["spellID"] = 586, ["pos"] = {["x"] = 0, ["y"] = 0}},
+    {["spellID"] = 34433, ["pos"] = {["x"] = 0, ["y"] = 0}}
   },
   ["SHAMAN"] = {
-    {['spellID'] = 32182, ['pos'] = {['x'] = 0, ['y'] = 0}},
+    {["spellID"] = 32182, ["pos"] = {["x"] = 0, ["y"] = 0}}
   },
   ["MAGE"] = {
-    {['spellID'] = 80353, ['pos'] = {['x'] = 0, ['y'] = 0}},
+    {["spellID"] = 80353, ["pos"] = {["x"] = 0, ["y"] = 0}}
   }
 }
 
 local englishFaction, localizedFaction = UnitFactionGroup("player")
 
 if englishFaction == "Horde" then
-  cdSpells["SHAMAN"][1]['spellID'] = 2825
+  cdSpells["SHAMAN"][1]["spellID"] = 2825
 end
 
 local defaults = {
@@ -109,15 +113,15 @@ function module:FixDatabase()
     end
   end
   if self.db.profile.version then
-    -- nothing to do yet
+  -- nothing to do yet
   end
   self.db.profile.version = dbVersion
 end
 
 function module:OnInitialize()
   for i, v in ipairs(defaults.char.cdSpells) do
-    v.pos.x = cos(((i - 1) / #defaults.char.cdSpells ) * 360) * 36
-    v.pos.y = sin(((i - 1) / #defaults.char.cdSpells ) * 360) * 36
+    v.pos.x = cos(((i - 1) / #defaults.char.cdSpells) * 360) * 36
+    v.pos.y = sin(((i - 1) / #defaults.char.cdSpells) * 360) * 36
   end
 
   self.db = addon.db:RegisterNamespace("Cooldowns", defaults)
@@ -132,10 +136,8 @@ function module:PopulateCdSpellsOptions()
   end
   for i, v in ipairs(cdSpells) do
     if v.spellID ~= null then
-
       local arg = {
-
-        name = tostring(GetSpellInfo(v.spellID)),
+        name = tostring(C_Spell.GetSpellInfo(v.spellID).name),
         type = "group",
         args = {
           xPos = {
@@ -143,25 +145,37 @@ function module:PopulateCdSpellsOptions()
             type = "input",
             get = function()
               if cdSpells[i] then
-                return tostring(cdSpells[i].pos.x) 
+                return tostring(cdSpells[i].pos.x)
               end
             end,
             set = function(info, value)
               cdSpells[i].pos.x = tonumber(value)
             end,
-            validate = function(info, value) if tonumber(value) == nil then return "That's not a number!" end return true end,
+            validate = function(info, value)
+              if tonumber(value) == nil then
+                return "That's not a number!"
+              end
+              return true
+            end,
             order = 1
           },
           yPos = {
             name = L["y-Offset"],
             type = "input",
-            get = function() 
+            get = function()
               if cdSpells[i] then
-                return tostring(cdSpells[i].pos.y) 
+                return tostring(cdSpells[i].pos.y)
               end
             end,
-            set = function(info, value) cdSpells[i].pos.y = tonumber(value) end,
-            validate = function(info, value) if tonumber(value) == nil then return "That's not a number!" end return true end,
+            set = function(info, value)
+              cdSpells[i].pos.y = tonumber(value)
+            end,
+            validate = function(info, value)
+              if tonumber(value) == nil then
+                return "That's not a number!"
+              end
+              return true
+            end,
             order = 2
           },
           remove = {
@@ -178,9 +192,9 @@ function module:PopulateCdSpellsOptions()
         }
       }
       options.args.spells.args.list.args[tostring(i)] = arg
-		else
-			table.remove(cdSpells, i)
-		end
+    else
+      table.remove(cdSpells, i)
+    end
   end
 end
 
@@ -197,11 +211,15 @@ function module:GetOptions()
       size = {
         name = L["Icon size"],
         type = "range",
-        disabled = function() return not addon.db.profile.modules.cooldowns end,
+        disabled = function()
+          return not addon.db.profile.modules.cooldowns
+        end,
         min = 5,
         max = 50,
         step = 1,
-        get = function() return self.db.profile.size end,
+        get = function()
+          return self.db.profile.size
+        end,
         set = function(info, value)
           self.db.profile.size = value
           self:ApplyOptions()
@@ -216,9 +234,13 @@ function module:GetOptions()
       font = {
         name = L["Font"],
         type = "select",
-        disabled = function() return not addon.db.profile.modules.cooldowns end,
-        dialogControl = 'LSM30_Font',
-        get = function() return self.db.profile.font end,
+        disabled = function()
+          return not addon.db.profile.modules.cooldowns
+        end,
+        dialogControl = "LSM30_Font",
+        get = function()
+          return self.db.profile.font
+        end,
         set = function(_, value)
           self.db.profile.font = value
           self:ApplyOptions()
@@ -229,11 +251,15 @@ function module:GetOptions()
       fontSize = {
         name = L["Font Size"],
         type = "range",
-        disabled = function() return not addon.db.profile.modules.cooldowns end,
+        disabled = function()
+          return not addon.db.profile.modules.cooldowns
+        end,
         min = 1,
         max = 30,
         step = 1,
-        get = function() return self.db.profile.fontSize end,
+        get = function()
+          return self.db.profile.fontSize
+        end,
         set = function(_, value)
           self.db.profile.fontSize = value
           self:ApplyOptions()
@@ -244,26 +270,32 @@ function module:GetOptions()
         name = L["Spells"],
         type = "group",
         childGroups = "tab",
-        disabled = function() return not addon.db.profile.modules.cooldowns end,
+        disabled = function()
+          return not addon.db.profile.modules.cooldowns
+        end,
         args = {
           add = {
             name = L["Add Spell"],
             type = "input",
-            disabled = function() return not addon.db.profile.modules.cooldowns end,
+            disabled = function()
+              return not addon.db.profile.modules.cooldowns
+            end,
             get = false,
             set = function(info, value)
               if not tonumber(value) then
-                local _, _, _, _, _, _, spellId = GetSpellInfo(value)
+                local spellId = C_Spell.GetSpellInfo(value).spellID
                 value = spellId
               end
-              tinsert(self.db.char.cdSpells, {['spellID'] = tonumber(value), ['pos'] = {['x'] = 0, ['y'] = 0}})
+              tinsert(self.db.char.cdSpells, {["spellID"] = tonumber(value), ["pos"] = {["x"] = 0, ["y"] = 0}})
               self:PopulateCdSpellsOptions()
               self:SPELLS_CHANGED()
             end,
             validate = function(info, value)
-              local spellName = GetSpellInfo(value)
-              if not spellName then return false end
-              if addon:GetSpellPosInSpellbook(spellName) then
+              local spellID = C_Spell.GetSpellInfo(value).spellID
+              if not spellID then
+                return false
+              end
+              if addon:GetSpellPosInSpellbook(spellID) then
                 return true
               else
                 return string.format("%s is not a spell you possess!", value)
@@ -274,11 +306,13 @@ function module:GetOptions()
           arrange = {
             name = L["Auto arrange icons"],
             type = "execute",
-            disabled = function() return not addon.db.profile.modules.cooldowns end,
+            disabled = function()
+              return not addon.db.profile.modules.cooldowns
+            end,
             func = function()
               for i, v in ipairs(self.db.char.cdSpells) do
-                v.pos.x = cos(((i - 1) / #self.db.char.cdSpells ) * 360) * 36
-                v.pos.y = sin(((i - 1) / #self.db.char.cdSpells ) * 360) * 36
+                v.pos.x = cos(((i - 1) / #self.db.char.cdSpells) * 360) * 36
+                v.pos.y = sin(((i - 1) / #self.db.char.cdSpells) * 360) * 36
               end
               self:ApplyOptions()
             end,
@@ -287,7 +321,9 @@ function module:GetOptions()
           list = {
             name = L["Spells"],
             type = "group",
-            disabled = function() return not addon.db.profile.modules.cooldowns end,
+            disabled = function()
+              return not addon.db.profile.modules.cooldowns
+            end,
             args = {}
           }
         }
@@ -300,7 +336,9 @@ function module:GetOptions()
       defaults = {
         name = L["Restore defaults"],
         type = "execute",
-        disabled = function() return not addon.db.profile.modules.cooldowns end,
+        disabled = function()
+          return not addon.db.profile.modules.cooldowns
+        end,
         func = function()
           self.db = deepcopy(defaults)
           self:SPELLS_CHANGED()
@@ -313,32 +351,34 @@ function module:GetOptions()
 end
 
 function module:ACTIONBAR_UPDATE_COOLDOWN()
-    local _, gcdLeft
-    gcdLeft = GetSpellCooldown(61304)
-    for _, v in ipairs(cdFrames) do
-      spell = GetSpellBookItemName(v.spell, BOOKTYPE_SPELL)
-      local start, dur = GetSpellCooldown(spell)
-      if type(dur) == "number" and type(gcdLeft) == "number" then
-        if dur > gcdLeft then
-          v.frame.startTime = start
-          v.frame.duration = dur
-          self:Show(v.frame)
-        end
+  local gcdLeft = C_Spell.GetSpellCooldown(61304).duration
+  for _, v in ipairs(cdFrames) do
+    local spell = C_SpellBook.GetSpellBookItemName(v.spell, 0)
+    local start, dur = C_Spell.GetSpellCooldown(spell).startTime, C_Spell.GetSpellCooldown(spell).duration
+    if type(dur) == "number" and type(gcdLeft) == "number" then
+      if dur > gcdLeft then
+        v.frame.startTime = start
+        v.frame.duration = dur
+        self:Show(v.frame)
       end
     end
+  end
 end
 
 function module:SPELLS_CHANGED()
-
   for _, v in ipairs(cdFrames) do
-    if v.frame then FrameHandler:DeleteFrame(v.frame) end
+    if v.frame then
+      FrameHandler:DeleteFrame(v.frame)
+    end
   end
   cdFrames = {}
   for _, v in ipairs(self.db.char.cdSpells) do
-    local spell, _, icon = GetSpellInfo(v.spellID)
+    local spellinfo = C_Spell.GetSpellInfo(v.spellID)
+    local spell = spellinfo.spellID
+    local icon = spellinfo.iconID
     local spellPos = addon:GetSpellPosInSpellbook(spell)
     if spellPos then
-      tinsert(cdFrames, {['spell'] = spellPos, ['icon'] = icon, ['pos'] = v.pos}) -- Links frame offset to database value
+      tinsert(cdFrames, {["spell"] = spellPos, ["icon"] = icon, ["pos"] = v.pos}) -- Links frame offset to database value
     end
   end
   self:ApplyOptions()
@@ -367,12 +407,15 @@ function module:Hide(frame)
 end
 
 local function OnUpdate(self, elapsed)
-  if not self.startTime or not self.duration or self.duration <= 0 then print("exit") return end
+  if not self.startTime or not self.duration or self.duration <= 0 then
+    print("exit")
+    return
+  end
   local perc = (GetTime() - self.startTime) / self.duration
   self.texture:SetVertexColor(1.0, perc, perc)
   local dur = floor((self.duration - (GetTime() - self.startTime)) * 10) / 10
   if dur > 99 then
-    dur = '>>'
+    dur = ">>"
   elseif dur > 10 then
     dur = ceil(dur)
   end
@@ -387,17 +430,17 @@ function module:ApplyOptions()
   if self:IsEnabled() then
     for i, v in ipairs(cdFrames) do
       if not v.frame then
-        local frame = FrameHandler:CreateFrame('Frame')
+        local frame = FrameHandler:CreateFrame("Frame")
         frame:SetParent(anchor)
-        frame:SetFrameStrata('HIGH')
-        frame:SetScript('OnUpdate', OnUpdate)
+        frame:SetFrameStrata("HIGH")
+        frame:SetScript("OnUpdate", OnUpdate)
 
-        frame.texture = frame.texture or frame:CreateTexture(nil, 'ARTWORK')
+        frame.texture = frame.texture or frame:CreateTexture(nil, "ARTWORK")
         frame.texture:SetVertexColor(1, 0, 0)
-        frame.texture:SetPoint('CENTER', frame, 'CENTER')
+        frame.texture:SetPoint("CENTER", frame, "CENTER")
 
         frame.cdText = frame.cdText or frame:CreateFontString()
-        frame.cdText:SetPoint('CENTER', frame, 'CENTER', 0, 1)
+        frame.cdText:SetPoint("CENTER", frame, "CENTER", 0, 1)
 
         v.frame = frame
       end
@@ -417,10 +460,16 @@ end
 function module:Unlock(cursor)
   for i, v in ipairs(cdFrames) do
     self:Hide(v.frame)
-    v.frame:SetScript('OnUpdate', nil)
+    v.frame:SetScript("OnUpdate", nil)
     v.frame:ClearAllPoints()
     v.frame:SetParent(cursor)
-    v.frame:SetPoint('CENTER', cursor, 'CENTER', (v.pos.x) / v.frame:GetEffectiveScale(), (v.pos.y) / v.frame:GetEffectiveScale())
+    v.frame:SetPoint(
+      "CENTER",
+      cursor,
+      "CENTER",
+      (v.pos.x) / v.frame:GetEffectiveScale(),
+      (v.pos.y) / v.frame:GetEffectiveScale()
+    )
     v.frame.texture:SetVertexColor(1.0, 1.0, 1.0)
     v.frame.cdText:SetText("")
     v.frame:Show()
@@ -438,7 +487,7 @@ function module:Lock()
     v.frame:SetMovable(false)
     v.frame:SetScript("OnMouseDown", nil)
     v.frame:SetScript("OnMouseUp", nil)
-    v.frame:SetScript('OnUpdate', OnUpdate)
+    v.frame:SetScript("OnUpdate", OnUpdate)
 
     local cursor = v.frame:GetParent()
     local x, y = v.frame:GetCenter()

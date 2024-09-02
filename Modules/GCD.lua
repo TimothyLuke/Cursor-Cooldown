@@ -35,7 +35,7 @@ end
 
 function module:FixDatabase()
   if self.db.profile.version then
-    -- nothing to do yet
+  -- nothing to do yet
   end
   self.db.profile.version = dbVersion
 end
@@ -54,8 +54,12 @@ function module:GetOptions()
       sparkOnly = {
         name = L["Show spark only"],
         type = "toggle",
-        disabled = function() return not addon.db.profile.modules.gcd end,
-        get = function(info) return self.db.profile.sparkOnly end,
+        disabled = function()
+          return not addon.db.profile.modules.gcd
+        end,
+        get = function(info)
+          return self.db.profile.sparkOnly
+        end,
         set = function(info, val)
           self.db.profile.sparkOnly = val
           self:ApplyOptions()
@@ -68,8 +72,12 @@ function module:GetOptions()
         min = 10,
         max = 256,
         step = 1,
-        disabled = function() return not addon.db.profile.modules.gcd end,
-        get = function(info) return self.db.profile.radius end,
+        disabled = function()
+          return not addon.db.profile.modules.gcd
+        end,
+        get = function(info)
+          return self.db.profile.radius
+        end,
         set = function(info, val)
           self.db.profile.radius = val
           self:ApplyOptions()
@@ -82,8 +90,12 @@ function module:GetOptions()
         min = 15,
         max = 25,
         step = 5,
-        disabled = function() return not addon.db.profile.modules.gcd end,
-        get = function(info) return self.db.profile.thickness end,
+        disabled = function()
+          return not addon.db.profile.modules.gcd
+        end,
+        get = function(info)
+          return self.db.profile.thickness
+        end,
         set = function(info, val)
           self.db.profile.thickness = val
           self:ApplyOptions()
@@ -98,8 +110,12 @@ function module:GetOptions()
       barColor = {
         name = L["Bar"],
         type = "color",
-        disabled = function() return not addon.db.profile.modules.gcd end,
-        get = function(info) return self.db.profile.barColor.r, self.db.profile.barColor.g, self.db.profile.barColor.b, self.db.profile.barColor.a end,
+        disabled = function()
+          return not addon.db.profile.modules.gcd
+        end,
+        get = function(info)
+          return self.db.profile.barColor.r, self.db.profile.barColor.g, self.db.profile.barColor.b, self.db.profile.barColor.a
+        end,
         set = function(info, r, g, b, a)
           self.db.profile.barColor = {r = r, g = g, b = b, a = a}
           self:ApplyOptions()
@@ -110,8 +126,12 @@ function module:GetOptions()
       bgColor = {
         name = L["Background"],
         type = "color",
-        disabled = function() return not addon.db.profile.modules.gcd end,
-        get = function(info) return self.db.profile.backgroundColor.r, self.db.profile.backgroundColor.g, self.db.profile.backgroundColor.b, self.db.profile.backgroundColor.a end,
+        disabled = function()
+          return not addon.db.profile.modules.gcd
+        end,
+        get = function(info)
+          return self.db.profile.backgroundColor.r, self.db.profile.backgroundColor.g, self.db.profile.backgroundColor.b, self.db.profile.backgroundColor.a
+        end,
         set = function(info, r, g, b, a)
           self.db.profile.backgroundColor = {r = r, g = g, b = b, a = a}
           self:ApplyOptions()
@@ -122,8 +142,12 @@ function module:GetOptions()
       sparkColor = {
         name = L["Spark"],
         type = "color",
-        disabled = function() return not addon.db.profile.modules.gcd end,
-        get = function(info) return self.db.profile.sparkColor.r, self.db.profile.sparkColor.g, self.db.profile.sparkColor.b, self.db.profile.sparkColor.a end,
+        disabled = function()
+          return not addon.db.profile.modules.gcd
+        end,
+        get = function(info)
+          return self.db.profile.sparkColor.r, self.db.profile.sparkColor.g, self.db.profile.sparkColor.b, self.db.profile.sparkColor.a
+        end,
         set = function(info, r, g, b, a)
           self.db.profile.sparkColor = {r = r, g = g, b = b, a = a}
           self:ApplyOptions()
@@ -139,7 +163,9 @@ function module:GetOptions()
       defaults = {
         name = L["Restore defaults"],
         type = "execute",
-        disabled = function() return not addon.db.profile.modules.gcd end,
+        disabled = function()
+          return not addon.db.profile.modules.gcd
+        end,
         func = function()
           self.db:ResetProfile()
           self:ApplyOptions()
@@ -153,14 +179,18 @@ end
 
 function module:Show()
   addon:Show("gcd")
-  if ringMod and ringMod:IsEnabled() then ringMod:Show("gcd") end
+  if ringMod and ringMod:IsEnabled() then
+    ringMod:Show("gcd")
+  end
   gcdFrame:Show()
 end
 
 function module:Hide()
   gcdFrame:Hide()
 
-  if ringMod and ringMod:IsEnabled() then ringMod:Hide("gcd") end
+  if ringMod and ringMod:IsEnabled() then
+    ringMod:Hide("gcd")
+  end
   addon:Hide("gcd")
 end
 
@@ -192,7 +222,7 @@ function module:ApplyOptions()
       gcdFrame:SetParent(anchor)
       gcdFrame:SetAllPoints()
 
-      gcdFrame.sparkTexture = gcdFrame:CreateTexture(nil, 'OVERLAY')
+      gcdFrame.sparkTexture = gcdFrame:CreateTexture(nil, "OVERLAY")
       gcdFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
       gcdFrame.sparkTexture:SetBlendMode("ADD")
     end
@@ -200,7 +230,14 @@ function module:ApplyOptions()
 
     if not self.db.profile.sparkOnly then
       if not gcdFrame.donut then
-        local donut = addon.donut:New(true, self.db.profile.radius, self.db.profile.thickness, self.db.profile.barColor, self.db.profile.backgroundColor)
+        local donut =
+          addon.donut:New(
+          true,
+          self.db.profile.radius,
+          self.db.profile.thickness,
+          self.db.profile.barColor,
+          self.db.profile.backgroundColor
+        )
         donut:AttachTo(gcdFrame)
         gcdFrame.donut = donut
       else
@@ -211,34 +248,49 @@ function module:ApplyOptions()
         donut:SetBackgroundColor(self.db.profile.backgroundColor)
       end
 
-      gcdFrame:SetScript("OnShow", function(self) self.donut:Show() end)
-      gcdFrame:SetScript("OnHide", function(self) self.donut:Hide() end)
+      gcdFrame:SetScript(
+        "OnShow",
+        function(self)
+          self.donut:Show()
+        end
+      )
+      gcdFrame:SetScript(
+        "OnHide",
+        function(self)
+          self.donut:Hide()
+        end
+      )
     elseif gcdFrame.donut then
       gcdFrame.donut:Hide()
       gcdFrame:SetScript("OnShow", nil)
       gcdFrame:SetScript("OnHide", nil)
     end
 
-    gcdFrame.sparkTexture:SetVertexColor(self.db.profile.sparkColor.r, self.db.profile.sparkColor.g, self.db.profile.sparkColor.b, self.db.profile.sparkColor.a)
+    gcdFrame.sparkTexture:SetVertexColor(
+      self.db.profile.sparkColor.r,
+      self.db.profile.sparkColor.g,
+      self.db.profile.sparkColor.b,
+      self.db.profile.sparkColor.a
+    )
     gcdFrame.sparkTexture:SetWidth(self.db.profile.radius)
     gcdFrame.sparkTexture:SetHeight(self.db.profile.radius)
     gcdFrame.sparkTexture:Show()
 
-    gcdFrame:SetScript('OnUpdate', OnUpdate)
+    gcdFrame:SetScript("OnUpdate", OnUpdate)
   end
 end
 
 function module:ACTIONBAR_UPDATE_COOLDOWN()
   -- if spellNum then
 
-    local start, dur = GetSpellCooldown(61304)
-    if type(dur) == "number" then
-      if dur > 0 and dur <= 1.5 then
-        gcdFrame.startTime = start
-        gcdFrame.duration = dur
-        self:Show()
-      end
+  local start, dur = C_Spell.GetSpellCooldown(61304).startTime, C_Spell.GetSpellCooldown(61304).duration
+  if type(dur) == "number" then
+    if dur > 0 and dur <= 1.5 then
+      gcdFrame.startTime = start
+      gcdFrame.duration = dur
+      self:Show()
     end
+  end
   -- end
 end
 

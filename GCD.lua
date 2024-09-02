@@ -18,7 +18,7 @@ function addon:Hide(name)
 	showRequests[name] = false
 
 	local hide = true
-	for _,v in pairs(showRequests) do
+	for _, v in pairs(showRequests) do
 		if v then
 			hide = false
 		end
@@ -28,21 +28,8 @@ function addon:Hide(name)
 	end
 end
 
-function addon:GetSpellPosInSpellbook(spellName)
-	local spellNum = nil
-	for tab = 1, GetNumSpellTabs() do
-		local _, _, offset, numSpells = GetSpellTabInfo(tab)
-		for i = (1+offset), (offset+numSpells) do
-			local spell = GetSpellBookItemName(i, BOOKTYPE_SPELL)
-			if spell then
-				if string.lower(spell) == string.lower(spellName) then
-					spellNum = i
-					break
-				end
-			end
-		end
-	end
-	return spellNum;
+function addon:GetSpellPosInSpellbook(spellID)
+	return C_SpellBook.FindSpellBookSlotForSpell(spellID)
 end
 
 function addon:InitializeDefaults()
@@ -74,7 +61,9 @@ function addon:InitializeOptions()
 			unlock = {
 				name = L["Unlock"],
 				type = "execute",
-				func = function() addon:Unlock() end,
+				func = function()
+					addon:Unlock()
+				end,
 				order = 1
 			},
 			info = {
@@ -94,10 +83,12 @@ function addon:InitializeOptions()
 					mouse = {
 						name = L["Attach to cursor"],
 						type = "toggle",
-						get = function(info) return self.db.profile.attachToMouse end,
-						set = function(info,val)
-								self.db.profile.attachToMouse = val
-							end,
+						get = function(info)
+							return self.db.profile.attachToMouse
+						end,
+						set = function(info, val)
+							self.db.profile.attachToMouse = val
+						end,
 						order = 1
 					},
 					xOff = {
@@ -106,11 +97,15 @@ function addon:InitializeOptions()
 						min = 0,
 						max = 64,
 						step = 1,
-						disabled = function() return not self.db.profile.attachToMouse end,
-						get = function(info) return self.db.profile.offset.x end,
+						disabled = function()
+							return not self.db.profile.attachToMouse
+						end,
+						get = function(info)
+							return self.db.profile.offset.x
+						end,
 						set = function(info, val)
-									self.db.profile.offset.x = val
-								end,
+							self.db.profile.offset.x = val
+						end,
 						order = 2
 					},
 					yOff = {
@@ -119,50 +114,61 @@ function addon:InitializeOptions()
 						min = -64,
 						max = 0,
 						step = 1,
-						disabled = function() return not self.db.profile.attachToMouse end,
-						get = function(info) return self.db.profile.offset.y end,
+						disabled = function()
+							return not self.db.profile.attachToMouse
+						end,
+						get = function(info)
+							return self.db.profile.offset.y
+						end,
 						set = function(info, val)
-									self.db.profile.offset.y = val
-								end,
+							self.db.profile.offset.y = val
+						end,
 						order = 3
 					},
 					x = {
 						name = L["Left"],
 						type = "input",
-						disabled = function() return self.db.profile.attachToMouse end,
-						get = function(info) return tostring(self.db.profile.position.x) end,
+						disabled = function()
+							return self.db.profile.attachToMouse
+						end,
+						get = function(info)
+							return tostring(self.db.profile.position.x)
+						end,
 						set = function(info, val)
-									self.db.profile.position.x = tonumber(val)
-									self:ApplyOptions()
-								end,
+							self.db.profile.position.x = tonumber(val)
+							self:ApplyOptions()
+						end,
 						validate = function(_, value)
-											if tonumber(value) then
-												return true
-											else
-												return L["Left has to be a number!"]
-											end
-										end,
+							if tonumber(value) then
+								return true
+							else
+								return L["Left has to be a number!"]
+							end
+						end,
 						order = 4
 					},
 					y = {
 						name = L["Bottom"],
 						type = "input",
-						disabled = function() return self.db.profile.attachToMouse end,
-						get = function(info) return tostring(self.db.profile.position.y) end,
+						disabled = function()
+							return self.db.profile.attachToMouse
+						end,
+						get = function(info)
+							return tostring(self.db.profile.position.y)
+						end,
 						set = function(info, val)
-									self.db.profile.position.y = tonumber(val)
-									self:ApplyOptions()
-								end,
+							self.db.profile.position.y = tonumber(val)
+							self:ApplyOptions()
+						end,
 						validate = function(_, value)
-											if tonumber(value) then
-												return true
-											else
-												return L["Bottom has to be a number!"]
-											end
-										end,
+							if tonumber(value) then
+								return true
+							else
+								return L["Bottom has to be a number!"]
+							end
+						end,
 						order = 5
-					},
-
+					}
 				},
 				order = 10
 			}
@@ -171,19 +177,21 @@ function addon:InitializeOptions()
 	local i = 2
 	for name, module in self:IterateModules() do
 		local modOptions = module:GetOptions()
-		modOptions.order = i*10
+		modOptions.order = i * 10
 		modOptions.args.enabled = {
 			name = L["Enabled"],
 			type = "toggle",
-			get = function(info) return self.db.profile.modules[name] end,
-			set = function(info,val)
-					self.db.profile.modules[name] = val
-					if val then
-						self:GetModule(name):Enable()
-					else
-						self:GetModule(name):Disable()
-					end
-				end,
+			get = function(info)
+				return self.db.profile.modules[name]
+			end,
+			set = function(info, val)
+				self.db.profile.modules[name] = val
+				if val then
+					self:GetModule(name):Enable()
+				else
+					self:GetModule(name):Disable()
+				end
+			end,
 			order = 0
 		}
 		options.args[name] = modOptions
@@ -195,23 +203,23 @@ end
 local function OnUpdate(self, elapsed)
 	local x, y, xOff, yOff
 	if addon.db.profile.attachToMouse then
-		x, y = GetCursorPosition(UIParent);
+		x, y = GetCursorPosition(UIParent)
 		x = x + addon.db.profile.offset.x
 		y = y + addon.db.profile.offset.y
 	else
 		x, y = addon.db.profile.position.x, addon.db.profile.position.y
 	end
 	self:ClearAllPoints()
-	self:SetPoint('CENTER', UIParent, 'BOTTOMLEFT', x / self:GetEffectiveScale(), y / self:GetEffectiveScale())
+	self:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x / self:GetEffectiveScale(), y / self:GetEffectiveScale())
 end
 
 function addon:FixDatabase()
 	if not self.db.profile.version then -- first time logging in OR unversioned database
-		if self.db.char  then -- unversioned database
+		if self.db.char then -- unversioned database
 			if self.db.char.attachToMouse ~= nil then
 				self.db.profile.attachToMouse = self.db.char.attachToMouse
 			end
-			for i,v in pairs(self.db.profile.modules) do
+			for i, v in pairs(self.db.profile.modules) do
 				if self.db.char.modules and self.db.char.modules[i] ~= nil then
 					self.db.profile.modules[i] = self.db.char.modules[i]
 				end
@@ -221,7 +229,7 @@ function addon:FixDatabase()
 		end
 	end
 	if self.db.profile.version then
-		-- nothing to do yet
+	-- nothing to do yet
 	end
 	self.db.profile.version = dbVersion
 end
@@ -242,15 +250,17 @@ end
 function addon:OnEnable()
 	self:ApplyOptions()
 	for name, _ in self:IterateModules() do
-			if self.db.profile.modules[name] then
-				self:EnableModule(name)
-			end
+		if self.db.profile.modules[name] then
+			self:EnableModule(name)
+		end
 	end
 	return true
 end
 
 function addon:OnDisable()
-	if self.anchor then self.anchor:Hide() end
+	if self.anchor then
+		self.anchor:Hide()
+	end
 	for _, module in self:IterateModules() do
 		if module:IsEnabled() then
 			module:Disable()
@@ -265,13 +275,11 @@ function addon:ApplyOptions()
 	anchor:Hide()
 	anchor:ClearAllPoints()
 	anchor:SetFrameStrata("HIGH")
-	anchor:SetScript('OnUpdate', OnUpdate)
+	anchor:SetScript("OnUpdate", OnUpdate)
 	anchor:SetWidth(64)
 	anchor:SetHeight(64)
 
 	self.anchor = anchor
-
-
 end
 
 function addon:OpenConfig()
@@ -281,11 +289,14 @@ end
 --[[
 		Unlock
 ]]
-
-local cursorBackdrop = {bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-							edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-							tile = true, tileSize = 16, edgeSize = 16,
-							insets = { left = 4, right = 4, top = 4, bottom = 4 }}
+local cursorBackdrop = {
+	bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+	edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+	tile = true,
+	tileSize = 16,
+	edgeSize = 16,
+	insets = {left = 4, right = 4, top = 4, bottom = 4}
+}
 local cursorFrame
 
 function addon:Unlock()
@@ -300,32 +311,47 @@ function addon:Unlock()
 		cursor:SetWidth(20)
 		cursor:SetHeight(20)
 		cursor:SetBackdrop(cursorBackdrop)
-		cursor:SetBackdropColor(255,0,0,1)
-		cursor:SetFrameStrata('HIGH')
-		cursor:SetPoint("CENTER", UIParent, "BOTTOMLEFT", self.db.profile.position.x / cursor:GetEffectiveScale(), self.db.profile.position.y / cursor:GetEffectiveScale())
+		cursor:SetBackdropColor(255, 0, 0, 1)
+		cursor:SetFrameStrata("HIGH")
+		cursor:SetPoint(
+			"CENTER",
+			UIParent,
+			"BOTTOMLEFT",
+			self.db.profile.position.x / cursor:GetEffectiveScale(),
+			self.db.profile.position.y / cursor:GetEffectiveScale()
+		)
 		cursor:SetScript("OnMouseDown", cursor.StartMoving)
-		cursor:SetScript("OnMouseUp", function(self, button)
-											self:StopMovingOrSizing()
-											if button == "RightButton" then
-												local x, y = self:GetCenter()
-												addon.db.profile.position.x, addon.db.profile.position.y = x, y
-												self:Hide()
-												for name, module in addon:IterateModules() do
-													if addon.db.profile.modules[name] and module.Lock then
-														module:Lock()
-													end
-												end
-											end
-										end)
-		cursor:SetScript("OnEnter", function(self)
-										GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-										GameTooltip:SetText("Right Click")
-										GameTooltip:AddLine("to lock the icons and save their positions", 1, 1, 1)
-										GameTooltip:Show()
-									end)
-		cursor:SetScript("OnLeave", function(self)
-										GameTooltip:Hide()
-									end)
+		cursor:SetScript(
+			"OnMouseUp",
+			function(self, button)
+				self:StopMovingOrSizing()
+				if button == "RightButton" then
+					local x, y = self:GetCenter()
+					addon.db.profile.position.x, addon.db.profile.position.y = x, y
+					self:Hide()
+					for name, module in addon:IterateModules() do
+						if addon.db.profile.modules[name] and module.Lock then
+							module:Lock()
+						end
+					end
+				end
+			end
+		)
+		cursor:SetScript(
+			"OnEnter",
+			function(self)
+				GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+				GameTooltip:SetText("Right Click")
+				GameTooltip:AddLine("to lock the icons and save their positions", 1, 1, 1)
+				GameTooltip:Show()
+			end
+		)
+		cursor:SetScript(
+			"OnLeave",
+			function(self)
+				GameTooltip:Hide()
+			end
+		)
 		cursor:SetMovable(true)
 		cursor:EnableMouse(true)
 		cursor:Show()
