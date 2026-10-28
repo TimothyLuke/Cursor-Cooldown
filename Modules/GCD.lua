@@ -3,9 +3,8 @@ local module = addon:NewModule("gcd")
 local L = LibStub("AceLocale-3.0"):GetLocale("CC")
 local dbVersion = 1
 
-local GetTime = GetTime
-local spellNum
-local spellName
+-- The global cooldown's own spell: every spell on the GCD shares its cooldown.
+local GCD_SPELL = 61304
 local gcdFrame
 local options
 local ringMod
@@ -22,10 +21,9 @@ local defaults = {
 }
 
 function module:OnEnable()
-  -- self:SPELLS_CHANGED()
   self:ApplyOptions()
-  -- self:RegisterEvent("SPELLS_CHANGED")
-  self:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
+  self:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+  self:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN", "SPELL_UPDATE_COOLDOWN")
 end
 
 function module:OnDisable()
@@ -183,35 +181,17 @@ function module:Show()
     ringMod:Show("gcd")
   end
   gcdFrame:Show()
+  gcdFrame.donut:Show()
 end
 
 function module:Hide()
   gcdFrame:Hide()
+  gcdFrame.donut:Hide()
 
   if ringMod and ringMod:IsEnabled() then
     ringMod:Hide("gcd")
   end
   addon:Hide("gcd")
-end
-
-local function OnUpdate(self, elapsed)
-  local gcdPerc = (GetTime() - self.startTime) / self.duration
-  if gcdPerc < 1 then
-    local angle = gcdPerc * 360
-    if not module.db.profile.sparkOnly then
-      gcdFrame.donut:SetAngle(angle)
-    end
-    angle = 360 - (-90 + angle)
-
-    local x = cos(angle) * module.db.profile.radius * 0.95
-    local y = sin(angle) * module.db.profile.radius * 0.95
-    local spark = gcdFrame.sparkTexture
-    spark:SetRotation(rad(angle + 90))
-    spark:ClearAllPoints()
-    spark:SetPoint("CENTER", gcdFrame, "CENTER", x, y)
-  else
-    module:Hide()
-  end
 end
 
 function module:ApplyOptions()
@@ -222,99 +202,59 @@ function module:ApplyOptions()
       gcdFrame:SetParent(anchor)
       gcdFrame:SetAllPoints()
 
-      gcdFrame.sparkTexture = gcdFrame:CreateTexture(nil, "OVERLAY")
-      gcdFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
-      gcdFrame.sparkTexture:SetBlendMode("ADD")
+      local donut =
+        addon.donut:New(
+        true,
+        self.db.profile.radius,
+        self.db.profile.thickness,
+        self.db.profile.barColor,
+        self.db.profile.backgroundColor
+      )
+      donut:AttachTo(gcdFrame)
+      donut:SetSpark(true)
+      donut:SetOnDone(
+        function()
+          module:Hide()
+        end
+      )
+      gcdFrame.donut = donut
     end
     self:Hide()
 
-    if not self.db.profile.sparkOnly then
-      if not gcdFrame.donut then
-        local donut =
-          addon.donut:New(
-          true,
-          self.db.profile.radius,
-          self.db.profile.thickness,
-          self.db.profile.barColor,
-          self.db.profile.backgroundColor
-        )
-        donut:AttachTo(gcdFrame)
-        gcdFrame.donut = donut
-      else
-        local donut = gcdFrame.donut
-        donut:SetRadius(self.db.profile.radius)
-        donut:SetThickness(self.db.profile.thickness)
-        donut:SetBarColor(self.db.profile.barColor)
-        donut:SetBackgroundColor(self.db.profile.backgroundColor)
-      end
-
-      gcdFrame:SetScript(
-        "OnShow",
-        function(self)
-          self.donut:Show()
-        end
-      )
-      gcdFrame:SetScript(
-        "OnHide",
-        function(self)
-          self.donut:Hide()
-        end
-      )
-    elseif gcdFrame.donut then
-      gcdFrame.donut:Hide()
-      gcdFrame:SetScript("OnShow", nil)
-      gcdFrame:SetScript("OnHide", nil)
-    end
-
-    gcdFrame.sparkTexture:SetVertexColor(
-      self.db.profile.sparkColor.r,
-      self.db.profile.sparkColor.g,
-      self.db.profile.sparkColor.b,
-      self.db.profile.sparkColor.a
-    )
-    gcdFrame.sparkTexture:SetWidth(self.db.profile.radius)
-    gcdFrame.sparkTexture:SetHeight(self.db.profile.radius)
-    gcdFrame.sparkTexture:Show()
-
-    gcdFrame:SetScript("OnUpdate", OnUpdate)
+    local donut = gcdFrame.donut
+    donut:SetRadius(self.db.profile.radius)
+    donut:SetThickness(self.db.profile.thickness)
+    donut:SetBarColor(self.db.profile.barColor)
+    donut:SetBackgroundColor(self.db.profile.backgroundColor)
+    donut:SetSparkColor(self.db.profile.sparkColor)
+    donut:SetSparkOnly(self.db.profile.sparkOnly)
   end
 end
 
-function module:ACTIONBAR_UPDATE_COOLDOWN()
-  -- if spellNum then
-
-  local start, dur = C_Spell.GetSpellCooldown(61304).startTime, C_Spell.GetSpellCooldown(61304).duration
-  if type(dur) == "number" then
-    if dur > 0 and dur <= 1.5 then
-      gcdFrame.startTime = start
-      gcdFrame.duration = dur
-      self:Show()
-    end
+-- isActive is never secret, so it can say whether the GCD is running; the
+-- times themselves go to the ring as a duration object.
+function module:SPELL_UPDATE_COOLDOWN()
+  local info = C_Spell.GetSpellCooldown(GCD_SPELL)
+  if info and info.isActive then
+    gcdFrame.donut:StartDuration(C_Spell.GetSpellCooldownDuration(GCD_SPELL))
+    self:Show()
   end
-  -- end
 end
-
--- function module:SPELLS_CHANGED()
---   local _, class = UnitClass("player")
---   spellName = GetSpellInfo(spells[class])
---   spellNum = addon:GetSpellPosInSpellbook(spellName)
--- end
 
 function module:Unlock(cursor)
   if not self.db.profile.sparkOnly then
-    gcdFrame:SetScript("OnUpdate", nil)
-    gcdFrame.donut:SetAngle(195)
     gcdFrame:SetParent(cursor)
     gcdFrame:SetAllPoints()
     gcdFrame:Show()
+    gcdFrame.donut:Show()
+    gcdFrame.donut:SetAngle(195)
   end
 end
 
 function module:Lock()
   if not self.db.profile.sparkOnly then
-    gcdFrame:Hide()
+    self:Hide()
     gcdFrame:SetParent(addon.anchor)
     gcdFrame:SetAllPoints()
-    gcdFrame:SetScript("OnUpdate", OnUpdate)
   end
 end

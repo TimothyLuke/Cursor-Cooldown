@@ -5,8 +5,9 @@ local L = LibStub("AceLocale-3.0"):GetLocale("CC")
 local dbVersion = 1
 
 local GetTime = GetTime
-local castStartTime, castEndTime, castDuration, castInterrupted, castLatency, castSent, isCasting
+local castLatency, castSent
 local castFrame
+local castBarHidden
 local options
 local ringMod
 
@@ -203,20 +204,7 @@ function module:GetOptions()
 				get = function(info) return self.db.profile.hideCastBar end,
 				set = function(info,val)
 						self.db.profile.hideCastBar = val
-						if val then
-							PlayerCastingBarFrame:UnregisterAllEvents()
-							PlayerCastingBarFrame:Hide()
-						else
-							PlayerCastingBarFrame:UnregisterAllEvents()
-							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_START")
-							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
-							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
-							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
-							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-							PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
-						end
+						self:UpdateCastBar()
 					end,
 				order = 42
 			}
@@ -231,16 +219,20 @@ function module:OnEnable()
 	self:RegisterEvent("UNIT_SPELLCAST_START")
 	self:RegisterEvent("UNIT_SPELLCAST_STOP")
 	self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-	self:RegisterEvent("UNIT_SPELLCAST_FAILED")
 	self:RegisterEvent("UNIT_SPELLCAST_DELAYED")
 	self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
 	self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
 	self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
+	-- Evokers' empowered spells
+	self:RegisterEvent("UNIT_SPELLCAST_EMPOWER_START")
+	self:RegisterEvent("UNIT_SPELLCAST_EMPOWER_UPDATE")
+	self:RegisterEvent("UNIT_SPELLCAST_EMPOWER_STOP")
 end
 
 function module:OnDisable()
 	self:UnregisterAllEvents()
 	self:Hide()
+	self:UpdateCastBar()
 end
 
 function module:Show()
@@ -253,43 +245,68 @@ function module:Show()
 	end
 
 	castFrame:Show()
-
-	local angle = castLatency * 360
-	if not module.db.profile.sparkOnly then
-		castFrame.latencyDonut:SetAngle(angle)
-	end
+	castFrame.donut:Show()
+	castFrame.latencyDonut:Show()
+	castFrame.latencyDonut:SetAngle(castLatency * 360)
 end
 
 function module:Hide()
 	castFrame:Hide()
+	castFrame.donut:Hide()
+	castFrame.latencyDonut:Hide()
 
 	if ringMod and ringMod:IsEnabled() then ringMod:Hide("cast") end
 	addon:Hide("cast")
 end
 
-local function OnUpdate(self, elapsed)
-	local castPerc = (1000 * GetTime() - castStartTime) / castDuration
-	if castDuration ~= 0 and castPerc < 1 then
-		local angle = castPerc * 360
-		if not module.db.profile.sparkOnly then
-			castFrame.donut:SetAngle(angle)
-		end
-		angle = 360 -(-90 + angle)
+-- The player's own casts aren't secret, but a spell can be flagged to be; such
+-- a cast just isn't shown.
+local function IsSecret(...)
+	if not issecretvalue then return false end
+	for i = 1, select("#", ...) do
+		if issecretvalue((select(i, ...))) then return true end
+	end
+	return false
+end
 
-		local x = cos(angle) * module.db.profile.radius * 0.95
-		local y = sin(angle) * module.db.profile.radius * 0.95
-		local spark = castFrame.sparkTexture
-		spark:SetRotation(rad(angle+90))
-		spark:ClearAllPoints()
-		spark:SetPoint("CENTER", castFrame, "CENTER", x, y)
-
-		if module.db.profile.sparkOnly and castPerc > 1-castLatency then
-			spark:SetVertexColor(module.db.profile.latencyColor.r, module.db.profile.latencyColor.g, module.db.profile.latencyColor.b, module.db.profile.latencyColor.a)
-		else
-			spark:SetVertexColor(module.db.profile.sparkColor.r, module.db.profile.sparkColor.g, module.db.profile.sparkColor.b, module.db.profile.sparkColor.a)
-		end
+-- The cast's name, and when it started and ends (ms).
+local function CastTimes(event)
+	local name, startTime, endTime, _
+	if event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_DELAYED" then
+		name, _, _, startTime, endTime = UnitCastingInfo("player")
 	else
-		module:Hide()
+		name, _, _, startTime, endTime = UnitChannelInfo("player")
+		-- An empowered spell can be held at full power past its end.
+		if endTime and (event == "UNIT_SPELLCAST_EMPOWER_START" or event == "UNIT_SPELLCAST_EMPOWER_UPDATE") then
+			endTime = endTime + GetUnitEmpowerHoldAtMaxTime("player")
+		end
+	end
+	if not startTime or not endTime or IsSecret(startTime, endTime) then return end
+	return name, startTime, endTime
+end
+
+local function StartCast(event)
+	local name, startTime, endTime = CastTimes(event)
+	if not name then return end
+	local castDuration = endTime - startTime
+	if castDuration <= 0 then return end
+
+	-- Time from asking for the spell to the server starting it.
+	local sendLag = castSent and (GetTime() * 1000 - castSent) or 0
+	castSent = nil
+	if sendLag > castDuration then sendLag = castDuration end
+	castLatency = sendLag / castDuration
+
+	castFrame.spellText:SetText(name)
+	castFrame.donut:Start(startTime / 1000, castDuration / 1000)
+	module:Show()
+end
+
+-- The same cast, moved: pushed back, or a channel or empower changed.
+local function UpdateCast(event)
+	local _, startTime, endTime = CastTimes(event)
+	if startTime and castFrame:IsShown() then
+		castFrame.donut:Start(startTime / 1000, (endTime - startTime) / 1000)
 	end
 end
 
@@ -298,62 +315,41 @@ function module:UNIT_SPELLCAST_SENT(_, unit)
 	castSent = GetTime() * 1000
 end
 
-function module:UNIT_SPELLCAST_START(_, unit, action)
+function module:UNIT_SPELLCAST_START(event, unit)
 	if unit ~= 'player' then return end
-	_, _, _, castStartTime, castEndTime, _, _, _, spellid = UnitCastingInfo(unit)
-	spell = C_Spell.GetSpellInfo(spellid).name
-	sendLag = (castSent and castSent > 0) and GetTime() * 1000 - castSent or 0
-	castDuration = castEndTime and castEndTime - castStartTime or 0
-	sendLag = sendLag > castDuration and castDuration or sendLag
-	castLatency = sendLag / castDuration
-	if castFrame.spellText then
-		castFrame.spellText:SetText(spell)
-	end
-	self:Show()
+	StartCast(event)
 end
+
+module.UNIT_SPELLCAST_CHANNEL_START = module.UNIT_SPELLCAST_START
+module.UNIT_SPELLCAST_EMPOWER_START = module.UNIT_SPELLCAST_START
+
+function module:UNIT_SPELLCAST_DELAYED(event, unit)
+	if unit ~= 'player' then return end
+	UpdateCast(event)
+end
+
+module.UNIT_SPELLCAST_CHANNEL_UPDATE = module.UNIT_SPELLCAST_DELAYED
+module.UNIT_SPELLCAST_EMPOWER_UPDATE = module.UNIT_SPELLCAST_DELAYED
 
 function module:UNIT_SPELLCAST_STOP(_, unit)
 	if unit ~= 'player' then return end
 	self:Hide()
 end
 
-function module:UNIT_SPELLCAST_FAILED(event, unit)
-	if unit ~= 'player' then return end
-	--self:Hide()
-end
+module.UNIT_SPELLCAST_INTERRUPTED = module.UNIT_SPELLCAST_STOP
+module.UNIT_SPELLCAST_CHANNEL_STOP = module.UNIT_SPELLCAST_STOP
+module.UNIT_SPELLCAST_EMPOWER_STOP = module.UNIT_SPELLCAST_STOP
 
-function module:UNIT_SPELLCAST_INTERRUPTED(event, unit)
-	if unit ~= 'player' then return end
-	self:Hide()
-end
-
-function module:UNIT_SPELLCAST_DELAYED(event, unit)
-	if unit ~= 'player' then return end
-	_, _, _, _, castStartTime, castEndTime = UnitCastingInfo(unit)
-	castDuration = castEndTime and castEndTime - castStartTime or 0
-end
-
-function module:UNIT_SPELLCAST_CHANNEL_START(event,unit)
-	if unit ~= 'player' then return end
-
-	spell, _, _, castStartTime, castEndTime = UnitChannelInfo(unit)
-	sendLag = (castSent and castSent > 0) and GetTime() * 1000 - castSent or 0
-	castDuration = castEndTime and castEndTime - castStartTime or 0
-	sendLag = sendLag > castDuration and castDuration or sendLag
-	castLatency = sendLag / castDuration
-	castFrame.spellText:SetText(spell)
-	self:Show()
-end
-
-function module:UNIT_SPELLCAST_CHANNEL_STOP(event,unit)
-	if unit ~= 'player' then return end
-	self:Hide()
-end
-
-function module:UNIT_SPELLCAST_CHANNEL_UPDATE(event,unit)
-	if unit ~= 'player' then return end
-	_, _, _, castStartTime, castEndTime = UnitChannelInfo(unit)
-	castDuration = castEndTime - castStartTime
+-- Hide Blizzard's cast bar by giving it no unit, and give it the player back
+-- only if we took it away.
+function module:UpdateCastBar()
+	if self.db.profile.hideCastBar and self:IsEnabled() then
+		PlayerCastingBarFrame:SetUnit(nil)
+		castBarHidden = true
+	elseif castBarHidden then
+		PlayerCastingBarFrame:SetUnit("player", true, false)
+		castBarHidden = nil
+	end
 end
 
 function module:ApplyOptions()
@@ -364,101 +360,62 @@ function module:ApplyOptions()
 			castFrame:SetParent(anchor)
 			castFrame:SetAllPoints()
 
-			castFrame.sparkTexture = castFrame:CreateTexture(nil, 'OVERLAY')
-			castFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
-			castFrame.sparkTexture:SetBlendMode("ADD")
+			local donut = addon.donut:New(false, self.db.profile.radius, self.db.profile.thickness, self.db.profile.latencyColor, self.db.profile.backgroundColor)
+			donut:AttachTo(castFrame)
+			castFrame.latencyDonut = donut
+
+			local bgcm = {r = 0, g = 0, b = 0, a = 0}
+			donut = addon.donut:New(true, self.db.profile.radius, self.db.profile.thickness, self.db.profile.barColor, bgcm)
+			donut:AttachTo(castFrame)
+			-- Over the latency ring.
+			donut.bgFrame:SetFrameLevel(castFrame.latencyDonut.bgFrame:GetFrameLevel() + 2)
+			donut:SetSpark(true)
+			donut:SetOnDone(function() module:Hide() end)
+			castFrame.donut = donut
+
+			castFrame.spellText = castFrame:CreateFontString(nil, "OVERLAY")
 		end
 		self:Hide()
 
-		if not self.db.profile.sparkOnly then
-			if not castFrame.donut then
-				local donut = addon.donut:New(false, self.db.profile.radius, self.db.profile.thickness, self.db.profile.latencyColor, self.db.profile.backgroundColor)
-				donut:AttachTo(castFrame)
-				castFrame.latencyDonut = donut
+		local donut = castFrame.donut
+		donut:SetRadius(self.db.profile.radius)
+		donut:SetThickness(self.db.profile.thickness)
+		donut:SetBarColor(self.db.profile.barColor)
+		donut:SetSparkColor(self.db.profile.sparkColor)
+		donut:SetSparkOnly(self.db.profile.sparkOnly)
 
-				local bgcm = {}
-				bgcm.r = 0
-				bgcm.g = 0
-				bgcm.b = 0
-				bgcm.a = 0
-				donut = addon.donut:New(true, self.db.profile.radius, self.db.profile.thickness, self.db.profile.barColor, bgcm, donut.frame)
-				donut:AttachTo(castFrame)
-				castFrame.donut = donut
-			else
-				local donut = castFrame.donut
-				donut:SetRadius(self.db.profile.radius)
-				donut:SetThickness(self.db.profile.thickness)
-				donut:SetBarColor(self.db.profile.barColor)
-				donut:SetBackgroundColor(self.db.profile.backgroundColor)
+		-- The latency sits under the bar, on the background ring.
+		donut = castFrame.latencyDonut
+		donut:SetRadius(self.db.profile.radius)
+		donut:SetThickness(self.db.profile.thickness)
+		donut:SetBarColor(self.db.profile.latencyColor)
+		donut:SetBackgroundColor(self.db.profile.backgroundColor)
+		donut:SetSparkOnly(self.db.profile.sparkOnly)
 
-				donut = castFrame.latencyDonut
-				donut:SetRadius(self.db.profile.radius)
-				donut:SetThickness(self.db.profile.thickness)
-				donut:SetBarColor(self.db.profile.latencyColor)
-				donut:SetBackgroundColor(self.db.profile.backgroundColor)
-			end
-
-			castFrame:SetScript("OnShow", function(self) self.donut:Show() self.latencyDonut:Show() end)
-			castFrame:SetScript("OnHide", function(self) self.donut:Hide() self.latencyDonut:Hide() end)
-		elseif castFrame.donut then
-			castFrame.donut:Hide()
-			castFrame.latencyDonut:Hide()
-			castFrame:SetScript("OnShow", nil)
-			castFrame:SetScript("OnHide", nil)
-		end
-
-		castFrame.sparkTexture:SetVertexColor(self.db.profile.sparkColor.r, self.db.profile.sparkColor.g, self.db.profile.sparkColor.b, self.db.profile.sparkColor.a)
-		castFrame.sparkTexture:SetWidth(self.db.profile.radius)
-		castFrame.sparkTexture:SetHeight(self.db.profile.radius)
-		castFrame.sparkTexture:Show()
-
-		if self.db.profile.spellText then
-			local spellText = castFrame.spellText or castFrame:CreateFontString(nil, "OVERLAY")
-			spellText:ClearAllPoints()
-			spellText:SetPoint("BOTTOM", castFrame, "CENTER", 0, self.db.profile.radius + 5)
-			spellText:SetFont(media:Fetch("font", self.db.profile.spellText.font), self.db.profile.spellText.fontSize)
-			spellText:Show()
-			castFrame.spellText = spellText
-		elseif castFrame.spellText then
-			castFrame.spellText:ClearAllPoints()
-			castFrame.spellText:Hide()
-		end
-
-		if self.db.profile.hideCastBar then
-			PlayerCastingBarFrame:UnregisterAllEvents()
-			PlayerCastingBarFrame:Hide()
-		else
-			PlayerCastingBarFrame:UnregisterAllEvents()
-			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_START")
-			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
-			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
-			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
-			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-			PlayerCastingBarFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
-		end
-
-		castFrame:SetScript('OnUpdate', OnUpdate)
+		local spellText = castFrame.spellText
+		spellText:ClearAllPoints()
+		spellText:SetPoint("BOTTOM", castFrame, "CENTER", 0, self.db.profile.radius + 5)
+		spellText:SetFont(media:Fetch("font", self.db.profile.spellText.font), self.db.profile.spellText.fontSize)
 	end
+	self:UpdateCastBar()
 end
 
 function module:Unlock(cursor)
 	if not self.db.profile.sparkOnly then
-		castFrame:SetScript("OnUpdate", nil)
-		castFrame.donut:SetAngle(320)
-		castFrame.latencyDonut:SetAngle(60)
 		castFrame:SetParent(cursor)
 		castFrame:SetAllPoints()
 		castFrame:Show()
+		castFrame.donut:Show()
+		castFrame.latencyDonut:Show()
+		castFrame.donut:SetAngle(320)
+		castFrame.latencyDonut:SetAngle(60)
 	end
 end
 
 function module:Lock()
 	if not self.db.profile.sparkOnly then
-		castFrame:Hide()
+		self:Hide()
 		castFrame:SetParent(addon.anchor)
 		castFrame:SetAllPoints()
-		castFrame:SetScript("OnUpdate", OnUpdate)
 	end
 end

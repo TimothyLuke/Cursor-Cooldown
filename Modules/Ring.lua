@@ -7,7 +7,7 @@ local GetTime = GetTime
 
 local ringFrame
 local options
-local showRequests
+local showRequests = {}
 
 local defaults = {
 	profile = {
@@ -16,6 +16,23 @@ local defaults = {
 		rotate = false
 	}
 }
+
+local function OnUpdate(self, elapsed)
+	self.texture.timer = self.texture.timer + elapsed;
+	if ( self.texture.timer > 0.02 ) then
+		self.texture.hAngle = self.texture.hAngle + 0.5;
+		self.texture:SetRotation(rad(self.texture.hAngle));
+		self.texture.timer = 0;
+	end
+end
+
+local function OnShow(self)
+	if module.db.profile.rotate then
+		self:SetScript('OnUpdate', OnUpdate)
+	else
+		self:SetScript('OnUpdate', nil)
+	end
+end
 
 function module:ApplyOptions()
 	local anchor = addon.anchor
@@ -125,23 +142,6 @@ function module:GetOptions()
 	return options
 end
 
-local function OnUpdate(self, elapsed)
-	self.texture.timer = self.texture.timer + elapsed;
-	if ( self.texture.timer > 0.02 ) then
-		self.texture.hAngle = self.texture.hAngle + 0.5;
-		self.texture:SetRotation(rad(self.texture.hAngle));
-		self.texture.timer = 0;
-	end
-end
-
-local function OnShow(self)
-	if module.db.profile.rotate then
-		self:SetScript('OnUpdate', OnUpdate)
-	else
-		self:SetScript('OnUpdate', nil)
-	end
-end
-
 function module:Show(module)
 	showRequests[module] = true;
 	ringFrame:Show();
@@ -179,5 +179,4 @@ function module:Lock()
 	ringFrame:ClearAllPoints()
 	ringFrame:SetParent(addon.anchor)
 	ringFrame:SetAllPoints()
-	ringFrame:Show()
 end

@@ -57,3 +57,6 @@ Libs/CallbackHandler-1.0/CallbackHandler-1.0.xml
 Libs/LibSharedMedia-3.0/lib.xml
 Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua
 Libs/LibStub/LibStub.lua
+
+# Libraries come from .pkgmeta externals when packaged
+Libs/

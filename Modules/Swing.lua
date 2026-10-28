@@ -11,14 +11,19 @@ local swingFrame
 local options
 local ringMod
 
-local swingMode
-local playerClass
+local playerClass, playerGUID
 
-local autoshot = C_Spell.GetSpellInfo(75).name
-local shoot = C_Spell.GetSpellInfo(5019).name
-local slam = C_Spell.GetSpellInfo(1464).name
+-- Where swings come from.  WoW Forever reports each one (PLAYER_SWING); the
+-- Classic clients still let addons read the combat log.  Retail has neither,
+-- so it shows Auto Shot alone.
+local hasSwingEvent = C_SwingTimer ~= nil
+local CombatLogInfo = (C_CombatLog and C_CombatLog.GetCurrentEventInfo) or CombatLogGetCurrentEventInfo
+
+local AUTO_SHOT, SHOOT, SLAM = 75, 5019, 1464
 local slamStart
-local startTime, duration
+
+-- The main ring is the main hand, or ranged; the off hand has its own, inside it.
+local rings = {main = {}, off = {}}
 
 local defaults = {
 	profile = {
@@ -32,21 +37,21 @@ local defaults = {
 }
 
 function module:OnEnable()
+	playerGUID = UnitGUID("player")
 	self:ApplyOptions()
-	self:RegisterEvent("PLAYER_ENTER_COMBAT")
-	self:RegisterEvent("PLAYER_LEAVE_COMBAT")
-
-	self:RegisterEvent("START_AUTOREPEAT_SPELL")
-	self:RegisterEvent("STOP_AUTOREPEAT_SPELL")
-
-	self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-
-	if playerClass == "WARRIOR" then
-		self:RegisterEvent("UNIT_SPELLCAST_START")
-		self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+	if hasSwingEvent then
+		self:RegisterEvent("PLAYER_SWING")
+	else
+		if CombatLogInfo then
+			self:RegisterEvent("PLAYER_ENTER_COMBAT")
+			self:RegisterEvent("PLAYER_LEAVE_COMBAT")
+			if playerClass == "WARRIOR" then
+				self:RegisterEvent("UNIT_SPELLCAST_START")
+				self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+			end
+		end
+		self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 	end
-
-	self:RegisterEvent("UNIT_ATTACK")
 end
 
 function module:OnDisable()
@@ -65,7 +70,7 @@ function module:OnInitialize()
 	self.db = addon.db:RegisterNamespace("Swing", defaults)
 	self:FixDatabase()
 	ringMod = addon:GetModule("ring", true)
-	playerClass = UnitClass("player")
+	playerClass = select(2, UnitClass("player"))
 end
 
 function module:GetOptions()
@@ -73,6 +78,11 @@ function module:GetOptions()
 		name = "Swing",
 		type = "group",
 		args = {
+			sources = {
+				name = L["Melee swings come from the combat log on Classic and from the swing timer on WoW Forever. Retail has neither, so it shows Auto Shot alone."],
+				type = "description",
+				order = 0.5
+			},
 			sparkOnly = {
 				name = L["Show spark only"],
 				type = "toggle",
@@ -204,129 +214,150 @@ function module:Show()
 	if ringMod and ringMod:IsEnabled() then
 		ringMod:Show("swing")
 	end
-	startTime = GetTime()
-	if swingMode == 1 then
-		duration = UnitAttackSpeed("player")
-	elseif swingMode == 2 then
-		duration = UnitRangedDamage("player")
-	end
 	swingFrame:Show()
 end
 
 function module:Hide()
+	for _, ring in pairs(rings) do
+		ring.start, ring.duration = nil, nil
+		if ring.donut then
+			ring.donut:Hide()
+		end
+	end
 	swingFrame:Hide()
 
 	if ringMod and ringMod:IsEnabled() then
 		ringMod:Hide("swing")
 	end
-	startTime, duration = nil, nil
 	addon:Hide("swing")
 end
 
-local function OnUpdate(self, elapsed)
-	local perc = (GetTime() - startTime) / duration
-	if perc < 1 then
-		local angle = perc * 360
-		if not module.db.profile.sparkOnly then
-			swingFrame.donut:SetAngle(angle)
+local function IsSecret(value)
+	return issecretvalue and issecretvalue(value)
+end
+
+-- Start a ring's swing, now.  Attack speeds can be secret on some clients;
+-- such a swing isn't shown.
+function module:StartSwing(which, duration)
+	if not duration or IsSecret(duration) or duration <= 0 then
+		return
+	end
+	local ring = rings[which]
+	ring.start, ring.duration = GetTime(), duration
+	ring.donut:Show()
+	ring.donut:Start(ring.start, ring.duration)
+	self:Show()
+end
+
+-- A ring's swing, moved: delayed by Slam, or cut short by a parry.
+local function MoveSwing(ring, start, duration)
+	ring.start, ring.duration = start, duration
+	ring.donut:Start(start, duration)
+end
+
+local function EndSwing(which)
+	local ring = rings[which]
+	ring.start, ring.duration = nil, nil
+	ring.donut:Hide()
+	for _, other in pairs(rings) do
+		if other.start then
+			return
 		end
-		angle = 360 - (-90 + angle)
+	end
+	module:Hide()
+end
 
-		local x = cos(angle) * module.db.profile.radius * 0.95
-		local y = sin(angle) * module.db.profile.radius * 0.95
-		local spark = swingFrame.sparkTexture
-		spark:SetRotation(rad(angle + 90))
-		spark:ClearAllPoints()
-		spark:SetPoint("CENTER", swingFrame, "CENTER", x, y)
+-- WoW Forever: every auto attack, with how long until the next.
+function module:PLAYER_SWING(event, swingDuration, swingType)
+	if swingType == Enum.PlayerSwingType.OffHand then
+		self:StartSwing("off", swingDuration)
 	else
-		module:Hide()
+		self:StartSwing("main", swingDuration)
 	end
 end
 
+-- Classic: melee swings come from the combat log while we auto attack.
 function module:PLAYER_ENTER_COMBAT()
-	local _, _, offhandlow, offhandhigh = UnitDamage("player")
-	if (offhandhigh - offhandlow) <= 0.1 or playerClass == "DRUID" then
-		swingMode = 1
-		self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-	end
-end
-
-function module:PLAYER_LEAVE_COMBAT()
-	if swingMode == 1 then
-		swingMode = nil
-		self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-	end
-end
-
-function module:START_AUTOREPEAT_SPELL()
-	swingMode = 2
 	self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 end
 
-function module:STOP_AUTOREPEAT_SPELL()
-	if swingMode == 2 then
-		swingMode = nil
-		self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+function module:PLAYER_LEAVE_COMBAT()
+	self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+end
+
+function module:COMBAT_LOG_EVENT_UNFILTERED()
+	local _, subEvent, _, srcGUID, _, _, _, dstGUID, _, _, _, arg12, arg13, _, _, _, _, _, _, _, arg21 = CombatLogInfo()
+	if srcGUID == playerGUID then
+		local offHand
+		if subEvent == "SWING_DAMAGE" then
+			offHand = arg21
+		elseif subEvent == "SWING_MISSED" then
+			offHand = arg13
+		else
+			return
+		end
+		local mainSpeed, offSpeed = UnitAttackSpeed("player")
+		if offHand then
+			self:StartSwing("off", offSpeed)
+		else
+			self:StartSwing("main", mainSpeed)
+		end
+	elseif dstGUID == playerGUID and subEvent == "SWING_MISSED" and arg12 == "PARRY" then
+		local ring = rings.main
+		if ring.start then
+			MoveSwing(ring, ring.start, ring.duration * 0.6)
+		end
 	end
 end
 
-function module:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell)
-	if unit ~= "player" or not swingMode then
+local function IsSlam(spellID)
+	local slam = C_Spell.GetSpellInfo(SLAM)
+	local spell = C_Spell.GetSpellInfo(spellID)
+	return slam and spell and slam.name == spell.name
+end
+
+-- Ranged: each Auto Shot (or wand Shoot) starts the next.
+function module:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
+	if unit ~= "player" then
 		return
 	end
-	if swingMode == 1 then
-		if spell == slam and slamstart then
-			startTime = startTime + GetTime() - slamStart
-			slamStart = nil
+	if spellID == AUTO_SHOT or spellID == SHOOT then
+		self:StartSwing("main", (UnitRangedDamage("player")))
+	elseif slamStart and IsSlam(spellID) then
+		-- Slam holds the swing while it is cast.
+		local ring = rings.main
+		if ring.start then
+			MoveSwing(ring, ring.start + GetTime() - slamStart, ring.duration)
 		end
-	elseif swingMode == 2 then
-		if spell == autoshot or spell == shoot then
-			self:Show()
-		end
+		slamStart = nil
 	end
 end
 
-function module:UNIT_SPELLCAST_INTERRUPTED(event, unit, spell)
-	if unit == "player" and spell == slam and slamstart then
-		slamstart = nil
-	end
-end
-
-function module:UNIT_SPELLCAST_START(event, unit, spell)
-	if unit == "player" and spell == slam then
+function module:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
+	if unit == "player" and IsSlam(spellID) then
 		slamStart = GetTime()
 	end
 end
 
-function module:COMBAT_LOG_EVENT_UNFILTERED(
-	event,
-	timestamp,
-	combatevent,
-	srcGUID,
-	srcName,
-	srcFlags,
-	dstName,
-	dstGUID,
-	dstFlags,
-	spellID,
-	spellName)
-	if srcGUID == UnitGUID("player") then
-		if combatevent == "SWING_DAMAGE" or combatevent == "SWING_MISSED" then
-			self:Show()
-		end
-	elseif dstGUID == UnitGUID("player") and combatevent == "SWING_MISSED" and spellID == "PARRY" and duration then
-		duration = duration * 0.6
+function module:UNIT_SPELLCAST_INTERRUPTED(event, unit, castGUID, spellID)
+	if unit == "player" and slamStart and IsSlam(spellID) then
+		slamStart = nil
 	end
 end
 
-function module:UNIT_ATTACK(event, unit)
-	if unit == "player" and swingMode then
-		if swingMode == 1 then
-			duration = UnitAttackSpeed("player")
-		elseif swingMode == 2 then
-			duration = UnitRangedDamage("player")
-		end
+local function ApplyRing(ring, radius, db)
+	if not ring.donut then
+		ring.donut = addon.donut:New(true, radius, db.thickness, db.barColor, db.backgroundColor)
+		ring.donut:AttachTo(swingFrame)
+		ring.donut:SetSpark(true)
 	end
+	local donut = ring.donut
+	donut:SetRadius(radius)
+	donut:SetThickness(db.thickness)
+	donut:SetBarColor(db.barColor)
+	donut:SetBackgroundColor(db.backgroundColor)
+	donut:SetSparkColor(db.sparkColor)
+	donut:SetSparkOnly(db.sparkOnly)
 end
 
 function module:ApplyOptions()
@@ -336,80 +367,32 @@ function module:ApplyOptions()
 			swingFrame = CreateFrame("Frame")
 			swingFrame:SetParent(anchor)
 			swingFrame:SetAllPoints()
-
-			swingFrame.sparkTexture = swingFrame:CreateTexture(nil, "OVERLAY")
-			swingFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
-			swingFrame.sparkTexture:SetBlendMode("ADD")
 		end
+
+		local db = self.db.profile
+		ApplyRing(rings.main, db.radius, db)
+		-- The off hand's ring sits just inside the main hand's.
+		ApplyRing(rings.off, db.radius * (1 - db.thickness / 256) - 1, db)
+		rings.main.donut:SetOnDone(function() EndSwing("main") end)
+		rings.off.donut:SetOnDone(function() EndSwing("off") end)
 		self:Hide()
-
-		if not self.db.profile.sparkOnly then
-			if not swingFrame.donut then
-				local donut =
-					addon.donut:New(
-					true,
-					self.db.profile.radius,
-					self.db.profile.thickness,
-					self.db.profile.barColor,
-					self.db.profile.backgroundColor
-				)
-				donut:AttachTo(swingFrame)
-				swingFrame.donut = donut
-			else
-				local donut = swingFrame.donut
-				donut:SetRadius(self.db.profile.radius)
-				donut:SetThickness(self.db.profile.thickness)
-				donut:SetBarColor(self.db.profile.barColor)
-				donut:SetBackgroundColor(self.db.profile.backgroundColor)
-			end
-
-			swingFrame:SetScript(
-				"OnShow",
-				function(self)
-					self.donut:Show()
-				end
-			)
-			swingFrame:SetScript(
-				"OnHide",
-				function(self)
-					self.donut:Hide()
-				end
-			)
-		elseif swingFrame.donut then
-			swingFrame.donut:Hide()
-			swingFrame:SetScript("OnShow", nil)
-			swingFrame:SetScript("OnHide", nil)
-		end
-
-		swingFrame.sparkTexture:SetVertexColor(
-			self.db.profile.sparkColor.r,
-			self.db.profile.sparkColor.g,
-			self.db.profile.sparkColor.b,
-			self.db.profile.sparkColor.a
-		)
-		swingFrame.sparkTexture:SetWidth(self.db.profile.radius)
-		swingFrame.sparkTexture:SetHeight(self.db.profile.radius)
-		swingFrame.sparkTexture:Show()
-
-		swingFrame:SetScript("OnUpdate", OnUpdate)
 	end
 end
 
 function module:Unlock(cursor)
 	if not self.db.profile.sparkOnly then
-		swingFrame:SetScript("OnUpdate", nil)
-		swingFrame.donut:SetAngle(115)
 		swingFrame:SetParent(cursor)
 		swingFrame:SetAllPoints()
 		swingFrame:Show()
+		rings.main.donut:Show()
+		rings.main.donut:SetAngle(115)
 	end
 end
 
 function module:Lock()
 	if not self.db.profile.sparkOnly then
-		swingFrame:Hide()
+		self:Hide()
 		swingFrame:SetParent(addon.anchor)
 		swingFrame:SetAllPoints()
-		swingFrame:SetScript("OnUpdate", OnUpdate)
 	end
 end

@@ -1,4 +1,4 @@
-## Interface: 110005
+## Interface: 11509, 16001, 20506, 50504, 120105, 120107
 ## Title: Cursor Cooldown
 ## Notes: Display the global cooldown around your cursor. (+ other stuff)
 ## Author: TimothyLuke

@@ -28,8 +28,8 @@ function addon:Hide(name)
 	end
 end
 
-function addon:GetSpellPosInSpellbook(spellID)
-	return C_SpellBook.FindSpellBookSlotForSpell(spellID)
+function addon:IsSpellKnown(spellID)
+	return C_SpellBook.IsSpellKnown(spellID)
 end
 
 function addon:InitializeDefaults()
@@ -307,7 +307,8 @@ function addon:Unlock()
 		end
 	end
 	if unlocked then
-		local cursor = cursorFrame or CreateFrame("Frame")
+		local cursor = cursorFrame or CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+		cursorFrame = cursor
 		cursor:SetWidth(20)
 		cursor:SetHeight(20)
 		cursor:SetBackdrop(cursorBackdrop)
